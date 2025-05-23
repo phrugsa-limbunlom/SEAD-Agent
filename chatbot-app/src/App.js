@@ -15,7 +15,7 @@ function App() {
   const [pdfFile, setPdfFile] = useState(null);
   const messagesEndRef = useRef(null);
 
-  const backendUrl = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
+  const backendUrl = "";
   const endpoint = "/api/chat";
   const url = `${backendUrl}${endpoint}`;
 
@@ -77,9 +77,9 @@ function App() {
 
     try {
       const formData = new FormData();
-      formData.append("input_text", input);
+      formData.append("message", input);
       if (pdfFile) {
-        formData.append("pdf", pdfFile);
+        formData.append("document", pdfFile);
       }
 
       const res = await axios.post(url, formData, {

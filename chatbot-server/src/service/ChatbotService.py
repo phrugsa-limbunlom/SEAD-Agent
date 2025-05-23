@@ -133,7 +133,7 @@ class ChatbotService:
 
         return intent
 
-    def generate_answer(self, query: str, pdf: UploadFile = File(None)) -> str:
+    def generate_answer(self, query: str, pdf_filename = Optional[str], pdf_content: Optional[bytes] = None) -> str:
         """
         Generate an answer to a user query by checking relevance, intent, and interacting with the LLM.
 
@@ -151,26 +151,34 @@ class ChatbotService:
 
         Returns:
             str: A JSON-formatted message containing the chatbot's response.
+            :param pdf_filename:
+            :param query:
+            :param pdf_content:
         """
+
         if not self.is_query_relevant(query):
             return json.dumps({"message": PromptMessage.DEFAULT_MESSAGE})
 
-        intent = self.classify_intent(query)
+        text = query
+        if pdf_content:
+            doc = pymupdf.open(stream=pdf_content, filetype="pdf")
+            text = "\n".join([p.get_text() for p in doc])
+            intent = "summarize"
+        else:
+            intent = self.classify_intent(query)
+
+        print(intent)
 
         if intent == "summarize":
-            text = query
-            if pdf is not None:
-                doc = pymupdf.open(stream=pdf.read(), filetype="pdf")
-                text = "\n".join([p.get_text() for p in doc])
 
             summary_prompt = (ChatPromptTemplate.from_messages(
                 [PromptMessage.SYSTEM_MESSAGE, PromptMessage.HUMAN_MESSAGE, PromptMessage.AI_MESSAGE]).invoke(
-                {"query": text})
+                {"context": text, "query": query})
                               .to_string())
 
             summary = self.query_groq_api(client=self.client, prompt=summary_prompt, model=self.llm_model)
 
-            self.vector.create_vector_store(pdf.filename, text)
+            self.vector.create_vector_store(pdf_filename, text)
 
             return json.dumps({"message": summary})
 

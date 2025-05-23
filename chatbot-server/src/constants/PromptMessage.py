@@ -4,6 +4,7 @@ class PromptMessage:
     Always provide responses that are helpful, polite, and tailored to the user's requirements.
     """
     HUMAN_MESSAGE = """
+    Summarize this document
      {query}
     """
     AI_MESSAGE = """ 
@@ -31,4 +32,8 @@ class PromptMessage:
         Respond with only the word: summarize, question, or fallback
 
         User Input: {query}
+        
+        For example
+        Summarize the document -> intent = summarize
+        Who is the author of the document? -> intent = question
     """

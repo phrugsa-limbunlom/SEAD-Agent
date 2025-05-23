@@ -5,7 +5,7 @@ import sys
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Any, Dict
 from fastapi.staticfiles import StaticFiles
-from fastapi import FastAPI, Request, HTTPException, UploadFile, File
+from fastapi import FastAPI, Request, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
@@ -54,12 +54,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 app = FastAPI(lifespan=lifespan)
 
-app.mount("/", StaticFiles(directory="backend/frontend/build", html=True), name="static")
-
-@app.get("/")
-def read_index():
-    return FileResponse("backend/frontend/build/index.html")
-
 # enable cors
 app.add_middleware(
     CORSMiddleware,
@@ -70,10 +64,11 @@ app.add_middleware(
 )
 
 @app.post("/api/chat")
-async def process_chat_message(chat_message: ChatMessage,
-                               request: Request,
-                               document: UploadFile = File(None))\
-        -> Dict[str, Any]:
+async def process_chat_message(
+        message: str = Form(...),
+        document: UploadFile = File(None),
+        request: Request = None
+    ) -> Dict[str, Any]:
     """
     Endpoint to process incoming chat messages and generate a response via ChatbotService.
 
@@ -92,17 +87,32 @@ async def process_chat_message(chat_message: ChatMessage,
 
     Raises:
         HTTPException: If there's an error during message processing.
+        :param request:
+        :param document:
+        :param message:
     """
-    logger.info(f"Message: {chat_message.message}")
+    logger.info(f"Message: {message}")
+
+    logger.info(f"Filename: {document.filename if document else 'No file uploaded'}")
 
     service: ChatbotService = request.app.state.service
 
 
     try:
         logger.info("Waiting for response...")
-        response = json.loads(service.generate_answer(query=chat_message.message, pdf=document))
+        content = await document.read() if document else None
+        if content is not None:
+            response = json.loads(service.generate_answer(query=message,pdf_filename=document.filename, pdf_content=content))
+        else:
+            response = json.loads(service.generate_answer(query=message))
         logger.info(f"Response received: {response}")
         return response
     except Exception as e:
         logger.error(f"Error processing message: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/")
+def read_index():
+    return FileResponse("backend/frontend/build/index.html")
+
+app.mount("/", StaticFiles(directory="backend/frontend/build", html=True), name="static")

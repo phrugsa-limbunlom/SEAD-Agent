@@ -51,7 +51,7 @@ class VectorStoreService:
 
         # Chunk text, embed, and add to vector DB
         chunks = [text[i:i + 500] for i in range(0, len(text), 500)]
-        embeddings = self.embeddings.encode(chunks).tolist()
+        embeddings = self.embeddings.embed_documents(chunks)
         ids = [f"{file_name}_{i}" for i in range(len(chunks))]
         collection.add(documents=chunks, embeddings=embeddings, ids=ids)
 
