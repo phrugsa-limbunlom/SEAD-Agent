@@ -42,6 +42,8 @@ Handles vector storage and retrieval to enable searching across uploaded documen
  docker run -p 8080:8080 rag-arxiv-image
  docker run rag-arxiv-image python /home/src/tests/run_tests.py
  ```
+**Docker Hub link: https://hub.docker.com/r/phrugsal/rag-arxiv-image/tags**
+**Visit http://localhost:8080 to interact with the chatbot.**
 
 ## Installation and Setup
 
