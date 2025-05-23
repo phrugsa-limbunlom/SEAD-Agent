@@ -1,0 +1,26 @@
+/* Style the file input to blend with the theme */
+input[type="file"].file-input {
+  background-color: #2D2D2D;
+  color: #E5E7EB;
+  border: 1px solid #404040;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-right: 12px;
+  font-size: 14px;
+  cursor: pointer;
+  width: 240px;
+}
+
+input[type="file"].file-input::file-selector-button {
+  background-color: #2563EB;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+input[type="file"].file-input::file-selector-button:hover {
+  background-color: #1D4ED8;
+}
