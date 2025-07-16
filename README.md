@@ -14,7 +14,7 @@ The system uses **Mistral AI's function calling capabilities** to automatically 
 ## 📁 Project Structure
 
 ```
-rag-arxiv-summarization/
+structural-rag-agent/
 ├── chatbot-server/                 # Python FastAPI Backend
 │   ├── src/
 │   │   ├── main.py                # FastAPI application entry point
