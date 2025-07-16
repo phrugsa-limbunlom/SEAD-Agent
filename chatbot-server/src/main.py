@@ -12,7 +12,6 @@ from fastapi.responses import FileResponse
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from service.ChatbotService import ChatbotService
-from data.ChatMessage import ChatMessage
 
 # configure logging
 logging.basicConfig(
@@ -65,9 +64,9 @@ app.add_middleware(
 
 @app.post("/api/chat")
 async def process_chat_message(
+        request: Request,
         message: str = Form(...),
-        document: UploadFile = File(None),
-        request: Request = None
+        document: UploadFile = File(None)
     ) -> Dict[str, Any]:
     """
     Endpoint to process incoming chat messages and generate a response via ChatbotService.
@@ -77,9 +76,9 @@ async def process_chat_message(
     It can optionally process a PDF file as part of the summarization or question-answering.
 
     Args:
-        chat_message (ChatMessage): The chat message sent by the client.
+        message (str): The chat message text sent by the client.
+        document (UploadFile, optional): An optional PDF file for summarization or Q&A.
         request (Request): The HTTP request object containing app state (e.g., ChatbotService).
-        document (UploadFile, optional): An optional PDF (File) for summarization or Q&A.
 
     Returns:
         Dict[str, Any]: A dictionary containing the chatbot's response
@@ -87,9 +86,6 @@ async def process_chat_message(
 
     Raises:
         HTTPException: If there's an error during message processing.
-        :param request:
-        :param document:
-        :param message:
     """
     logger.info(f"Message: {message}")
 
@@ -102,7 +98,8 @@ async def process_chat_message(
         logger.info("Waiting for response...")
         content = await document.read() if document else None
         if content is not None:
-            response = json.loads(service.generate_answer(query=message,pdf_filename=document.filename, pdf_content=content))
+            filename = document.filename if document else None
+            response = json.loads(service.generate_answer(query=message, pdf_filename=filename, pdf_content=content))
         else:
             response = json.loads(service.generate_answer(query=message))
         logger.info(f"Response received: {response}")

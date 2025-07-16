@@ -49,14 +49,13 @@ class VectorStoreService:
         client = chromadb.Client(Settings(persist_directory=self.persistent_directory, anonymized_telemetry=False))
         collection = client.get_or_create_collection(self.collection)
 
-        # Chunk text, embed, and add to vector DB
+        # Chunk text and add to vector DB (embeddings handled automatically)
         chunks = [text[i:i + 500] for i in range(0, len(text), 500)]
-        embeddings = self.embeddings.embed_documents(chunks)
         ids = [f"{file_name}_{i}" for i in range(len(chunks))]
-        collection.add(documents=chunks, embeddings=embeddings, ids=ids)
+        collection.add(documents=chunks, ids=ids)
 
 
-    def load_vector_store(self) -> Chroma:
+    def load_vector_store(self):
         """
         Load the existing vector store and prepare a retriever for similarity-based lookups.
 
