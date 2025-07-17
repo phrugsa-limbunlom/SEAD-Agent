@@ -1,6 +1,27 @@
 # RAG-Powered Document System for Structural Engineering and Architectural Design
 
-A comprehensive RAG-powered document system that combines a Python FastAPI backend with a React frontend to provide intelligent analysis of research papers from structural engineering and architectural design domains.
+![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
+![React](https://img.shields.io/badge/react-18.2.0-blue.svg)
+![FastAPI](https://img.shields.io/badge/FastAPI-latest-green.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Docker](https://img.shields.io/badge/docker-supported-blue.svg)
+
+A comprehensive RAG-powered document system that combines a Python FastAPI backend with a React frontend to provide intelligent analysis of research papers from structural engineering and architectural design domains. Built with **Multi-modal model with function calling capabilities**, the system automatically determines the most appropriate tools and actions based on user queries, enabling seamless document processing, research discovery, and evidence-based design recommendations.
+
+## 📋 Table of Contents
+
+- [Key Features](#-key-features)
+- [Project Structure](#-project-structure)
+- [Services Architecture](#-services-architecture)
+- [Data Models](#-data-models)
+- [Usage Examples](#-usage-examples)
+- [System Requirements](#-system-requirements)
+- [Installation and Setup](#-installation-and-setup)
+- [Docker Deployment](#-docker-deployment)
+- [API Endpoints](#-api-endpoints)
+- [Configuration](#-configuration)
+- [License](#-license)
+- [Future Enhancements](#-future-enhancements)
 
 ## 🚀 Key Features
 
@@ -14,7 +35,7 @@ The system uses **Mistral AI's function calling capabilities** to automatically 
 ## 📁 Project Structure
 
 ```
-structural-rag-agent/
+rag-arxiv-summarization/
 ├── chatbot-server/                 # Python FastAPI Backend
 │   ├── src/
 │   │   ├── main.py                # FastAPI application entry point
@@ -22,7 +43,8 @@ structural-rag-agent/
 │   │   │   ├── ChatbotService.py  # Main chatbot orchestration
 │   │   │   ├── VectorStoreService.py  # Vector storage and retrieval
 │   │   │   ├── ArxivService.py    # Research paper fetching and processing
-│   │   │   └── DesignRecommendationService.py  # Design recommendation generation
+│   │   │   ├── DesignRecommendationService.py  # Design recommendation generation
+│   │   │   └── FunctionCallingService.py  # Function calling orchestration
 │   │   ├── data/                  # Data models and schemas
 │   │   │   ├── ChatMessage.py     # Chat message models
 │   │   │   ├── ChatbotResponse.py # Response models
@@ -30,17 +52,21 @@ structural-rag-agent/
 │   │   ├── constants/             # Application constants
 │   │   │   └── PromptMessage.py   # Standardized prompt templates
 │   │   └── utils/                 # Utility functions
-│   │       └── file_utils.py      # File operation utilities
+│   │       ├── file_utils.py      # File operation utilities
+│   │       └── image_utils.py     # Image processing utilities
 │   ├── requirements.txt           # Python dependencies
 │   └── model.yaml                 # Model configuration
 ├── chatbot-app/                   # React Frontend
 │   ├── src/
 │   │   ├── App.js                # Main React application
+│   │   ├── App.css               # Application styles
 │   │   └── ...                   # Other React components
 │   └── package.json              # Frontend dependencies
 ├── tests/                        # Test files
-├── Dockerfile                    # Container configuration
-└── docker-entrypoint.sh         # Container startup script
+│   └── run_tests.py             # Test runner
+├── docker-compose.yaml          # Docker Compose configuration
+├── Dockerfile                   # Container configuration
+└── docker-entrypoint.sh        # Container startup script
 ```
 
 ## 🛠️ Services Architecture
@@ -73,11 +99,6 @@ The main orchestration service that handles:
 - `process_function_calls()`: Executes called functions and generates final responses
 - `get_function_definitions()`: Defines available functions for the model to call
 - `is_query_relevant()`: Validates query relevance to structural/architectural design
-
-**Available Functions:**
-- `search_arxiv()`: Search for research papers on arXiv
-- `search_document()`: Search through uploaded documents using vector similarity
-- `get_design_recommendations()`: Get design recommendations based on research
 
 ### VectorStoreService
 Handles document embedding and retrieval for Q&A functionality:
@@ -157,27 +178,22 @@ User: "Find papers on steel frame design and give me recommendations"
 → System automatically calls both search_arxiv() and get_design_recommendations() → Comprehensive research-backed response
 ```
 
-## 🐳 Docker Deployment
+## 💻 System Requirements
 
-Build and run the application using Docker:
-
-```bash
-# Build the Docker image
-docker build -t rag-arxiv-image .
-
-# Run the application
-docker run -p 8080:8080 rag-arxiv-image
-
-# Run tests
-docker run rag-arxiv-image python /home/src/tests/run_tests.py
-```
+### **Minimum Requirements:**
+- **OS**: Windows 10, macOS 10.14+, Ubuntu 18.04+
+- **Python**: 3.8 or higher
+- **Node.js**: 16.0 or higher
+- **Memory**: 4GB RAM
+- **Storage**: 2GB available space
 
 ## 🚀 Installation and Setup
 
 ### Prerequisites
-- Python 3.8+
-- Node.js 16+
-- Git
+- **Python 3.8+**
+- **Node.js 16+**
+- **Git**
+- **Mistral AI API Key** (required)
 
 ### Backend Setup
 1. **Clone the repository**
@@ -186,7 +202,16 @@ docker run rag-arxiv-image python /home/src/tests/run_tests.py
    cd rag-arxiv-summarization
    ```
 
-2. **Install server dependencies**
+2. **Create and activate virtual environment**
+   ```bash
+   python -m venv venv
+   # On Windows:
+   venv\Scripts\activate
+   # On macOS/Linux:
+   source venv/bin/activate
+   ```
+
+3. **Install server dependencies**
    ```bash
    cd chatbot-server
    pip install -r requirements.txt
@@ -194,19 +219,21 @@ docker run rag-arxiv-image python /home/src/tests/run_tests.py
    
    **Key Dependencies:**
    - `mistralai>=1.0.0`: Mistral AI SDK for function calling and VLM capabilities
-   - `groq==0.18.0`: Groq SDK (legacy support)
+   - `fastapi[all]`: FastAPI framework with all optional dependencies
+   - `uvicorn==0.34.0`: ASGI server for FastAPI
    - `langchain-huggingface==0.1.2`: HuggingFace embeddings integration
    - `langchain_chroma==0.2.2`: Vector store using ChromaDB
    - `arxiv==2.1.0`: ArXiv API client for research paper search
    - `PyMuPDF==1.26.0`: PDF processing and text extraction
+   - `chromadb==0.4.24`: Vector database for embeddings
 
-3. **Configure environment variables**
+4. **Configure environment variables**
    Create a `.env` file in the `chatbot-server` directory:
    ```env
    MISTRAL_API_KEY=your_mistral_api_key_here
    ```
 
-4. **Run the FastAPI server**
+5. **Run the FastAPI server**
    ```bash
    uvicorn src.main:app --host 0.0.0.0 --port 8000
    ```
@@ -226,43 +253,75 @@ docker run rag-arxiv-image python /home/src/tests/run_tests.py
 3. **Access the application**
    Visit `http://localhost:3000` to interact with the chatbot.
 
+## 🐳 Docker Deployment
+
+### **Single Container Build**
+```bash
+# Build the Docker image
+docker build -t rag-arxiv-image .
+
+# Run the application
+docker run -p 8080:8080 rag-arxiv-image
+
+# Run tests
+docker run rag-arxiv-image python /home/src/tests/run_tests.py
+```
+
+### **Docker Compose (Recommended)**
+```bash
+# Build and run with Docker Compose
+docker-compose up --build
+
+# Run in detached mode
+docker-compose up -d
+
+# Stop services
+docker-compose down
+```
+
 ## 📋 API Endpoints
 
 The FastAPI backend provides the following key endpoints:
 
+### **Main Endpoints:**
 - `POST /api/chat`: Main chat endpoint with form data support
   - **Form Fields:**
     - `message` (required): User query string
     - `document` (optional): PDF file upload for summarization/Q&A
   - **Response:** JSON with chatbot response using function calling
-- `GET /`: Serves the React frontend
-- Static file serving for the frontend application
 
-## 🧪 Testing
-
-Run the test suite:
+### **Run Specific Test Categories:**
 ```bash
-cd tests
-python run_tests.py
+# Run backend tests
+cd chatbot-server
+python -m pytest tests/
+
+# Run frontend tests
+cd chatbot-app
+npm test
 ```
 
 ## 🔧 Configuration
 
-### Model Configuration (`model.yaml`)
+### **Model Configuration (`model.yaml`)**
 ```yaml
-LLM: "llama-3.3-70b-versatile"
+VLM: pixtral-12b-2409
 EMBEDDING: "sentence-transformers/all-MiniLM-L6-v2"
 ```
 
-### Environment Variables
-- `MISTRAL_API_KEY`: API key for Mistral AI service (required for function calling and VLM capabilities)
+### **Environment Variables**
+```env
+# Required
+MISTRAL_API_KEY=your_mistral_api_key_here
+```
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the **MIT License** - see the LICENSE file for details.
 
 ## 🔮 Future Enhancements
 
+### **Planned Features:**
 - **Multi-Modal Processing**: Enhanced VLM capabilities for processing images, diagrams, and technical drawings
 - **Additional Research Databases**: Integration with PubMed, IEEE Xplore, and other academic databases
 - **Advanced Function Calling**: More specialized functions for specific engineering domains
@@ -270,6 +329,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **Enhanced Visualization**: Interactive charts, graphs, and technical diagrams
 - **Offline Capabilities**: Local model deployment for secure environments
 
-
-
-
+### **Performance Improvements:**
+- **Async Processing**: Background job processing for large documents
+- **Caching Layer**: Redis-based caching for improved response times
+- **Database Optimization**: Advanced indexing and query optimization
+- **Model Optimization**: Fine-tuned models for specific engineering domains
