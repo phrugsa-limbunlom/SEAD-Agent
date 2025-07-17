@@ -32,9 +32,7 @@ https://github.com/user-attachments/assets/c58d35f6-d1bb-48e8-a83e-7267829f4846
 - [Project Structure](#-project-structure)
 - [Services Architecture](#-services-architecture)
 - [Data Models](#-data-models)
-- [Usage Ex
-
-amples](#-usage-examples)
+- [Usage Examples](#-usage-examples)
 - [System Requirements](#-system-requirements)
 - [Installation and Setup](#-installation-and-setup)
 - [Docker Deployment](#-docker-deployment)
@@ -345,11 +343,7 @@ This project is licensed under the **MIT License** - see the LICENSE file for de
 - **Multi-Modal Processing**: Enhanced VLM capabilities for processing images, diagrams, and technical drawings
 - **Additional Research Databases**: Integration with PubMed, IEEE Xplore, and other academic databases
 - **Advanced Function Calling**: More specialized functions for specific engineering domains
-- **Rea
-
-https://github.com/user-attachments/assets/ef5af3ce-fc29-4ae7-bba7-4ceef7350704
-
-l-time Collaboration**: Multi-user document analysis and collaborative recommendations
+- **Real-time Collaboration**: Multi-user document analysis and collaborative recommendations
 - **Enhanced Visualization**: Interactive charts, graphs, and technical diagrams
 - **Offline Capabilities**: Local model deployment for secure environments
 
