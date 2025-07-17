@@ -107,9 +107,3 @@ async def process_chat_message(
     except Exception as e:
         logger.error(f"Error processing message: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/")
-def read_index():
-    return FileResponse("backend/frontend/build/index.html")
-
-app.mount("/", StaticFiles(directory="backend/frontend/build", html=True), name="static")
