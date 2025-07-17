@@ -12,6 +12,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from service.VectorStoreService import VectorStoreService
 from service.ArxivService import ArxivService
 from service.DesignRecommendationService import DesignRecommendationService
+from service.FunctionCallingService import FunctionCallingService
 from utils.file_utils import FileUtils
 import re
 
@@ -47,266 +48,48 @@ class ChatbotService:
         # Add new services
         self.arxiv_service = ArxivService()
         self.design_recommendation_service = None  # Will be initialized in initialize_service
+        self.function_calling_service = None  # Will be initialized in initialize_service
 
     def get_function_definitions(self) -> List[Dict]:
         """
-        Define the functions that the model can call automatically using Mistral's format.
+        Get function definitions from FunctionCallingService.
         """
-        return [
-            {
-                "type": "function",
-                "function": {
-                    "name": "search_arxiv",
-                    "description": "Search for research papers on arXiv. Use this when the user is looking for academic papers, research, or scientific literature on any topic.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": "The search query for finding relevant research papers on arXiv"
-                            },
-                            "max_results": {
-                                "type": "integer",
-                                "description": "Maximum number of papers to return (default: 10)",
-                                "default": 10
-                            }
-                        },
-                        "required": ["query"]
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "search_document",
-                    "description": "Search through uploaded documents using vector similarity. Use this when the user has questions about previously uploaded documents or PDFs.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": "The question or search query about the uploaded document"
-                            }
-                        },
-                        "required": ["query"]
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "get_design_recommendations",
-                    "description": "Get design recommendations based on research papers and best practices. Use this when the user is asking for design advice, recommendations, or best practices in engineering or architecture.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "design_query": {
-                                "type": "string",
-                                "description": "The design question or area where recommendations are needed"
-                            },
-                            "domain": {
-                                "type": "string",
-                                "description": "The domain of the design (e.g., 'structural_architectural', 'mechanical', 'civil')",
-                                "default": "structural_architectural"
-                            }
-                        },
-                        "required": ["design_query"]
-                    }
-                }
-            }
-        ]
-
-    def _execute_function(self, function_name: str, function_args: Dict) -> str:
-        """
-        Execute the called function with the provided arguments.
-        """
-        try:
-            if function_name == "search_arxiv":
-                return self._search_arxiv_function(
-                    query=function_args.get("query", ""),
-                    max_results=function_args.get("max_results", 10)
-                )
-            elif function_name == "search_document":
-                return self._search_document_function(
-                    query=function_args.get("query", "")
-                )
-            elif function_name == "get_design_recommendations":
-                return self._get_design_recommendations_function(
-                    design_query=function_args.get("design_query", ""),
-                    domain=function_args.get("domain", "structural_architectural")
-                )
-            else:
-                return f"Unknown function: {function_name}"
-        except Exception as e:
-            logger.error(f"Error executing function {function_name}: {e}")
-            return f"Error executing function: {str(e)}"
-
-    def _search_arxiv_function(self, query: str, max_results: int = 10) -> str:
-        """
-        Function to search arXiv papers that the model can call.
-        """
-        try:
-            papers = self.arxiv_service.search_papers(query, max_results=max_results)
-            
-            if not papers:
-                return "No relevant research papers found for your query."
-            
-            # Format results for the model
-            results = []
-            for paper in papers[:max_results]:
-                results.append({
-                    "title": paper['title'],
-                    "authors": paper['authors'],
-                    "abstract": paper['abstract'][:300] + "...",
-                    "arxiv_id": paper['arxiv_id'],
-                    "published": paper['published'].strftime("%Y-%m-%d"),
-                    "pdf_url": paper['pdf_url']
-                })
-            
-            return json.dumps({"papers": results, "count": len(results)})
-            
-        except Exception as e:
-            logger.error(f"Error in arXiv search function: {e}")
-            return f"Error searching arXiv: {str(e)}"
-
-    def _search_document_function(self, query: str) -> str:
-        """
-        Function to search uploaded documents that the model can call.
-        """
-        try:
-            if not self.vector:
-                return "Vector store is not initialized. Please upload a document first."
-            
-            # Load vector store and search for relevant documents
-            retriever = self.vector.load_vector_store()
-            # Use invoke method for langchain retrievers
-            results = retriever.invoke(query)
-            
-            if not results:
-                return "No relevant content found in uploaded documents."
-            
-            # Format results for the model
-            formatted_results = []
-            for result in results:
-                formatted_results.append({
-                    "content": result.page_content,
-                    "metadata": result.metadata,
-                    "source": result.metadata.get("source", "Unknown")
-                })
-            
-            return json.dumps({"documents": formatted_results, "count": len(formatted_results)})
-            
-        except Exception as e:
-            logger.error(f"Error in document search function: {e}")
-            return f"Error searching documents: {str(e)}"
-
-    def _get_design_recommendations_function(self, design_query: str, domain: str = "structural_architectural") -> str:
-        """
-        Function to get design recommendations that the model can call.
-        """
-        try:
-            if not self.design_recommendation_service:
-                return "Design recommendation service is not available."
-            
-            recommendations = self.design_recommendation_service.generate_recommendations(
-                design_query=design_query,
-                domain=domain
-            )
-            
-            if not recommendations:
-                return "No design recommendations could be generated for your query."
-            
-            # Format recommendations for the model
-            results = []
-            for rec in recommendations:
-                results.append({
-                    "recommendation": rec.recommendation_text,
-                    "domain": rec.design_domain,
-                    "application": rec.application_area,
-                    "confidence": rec.confidence_score,
-                    "evidence": rec.evidence_strength,
-                    "complexity": rec.implementation_complexity,
-                    "source_papers": rec.source_papers
-                })
-            
-            return json.dumps({"recommendations": results, "count": len(results)})
-            
-        except Exception as e:
-            logger.error(f"Error in design recommendations function: {e}")
-            return f"Error generating recommendations: {str(e)}"
+        if self.function_calling_service:
+            return self.function_calling_service.get_function_definitions()
+        return []
 
     def query_mistral_with_function_calling(self, messages: List[Dict], model: str) -> Any:
         """
-        Query Mistral API with function calling capabilities.
-        Implements the 4-step process described in Mistral documentation.
+        Query Mistral API with function calling capabilities using FunctionCallingService.
         """
         try:
-            if not self.client:
-                raise ValueError("Mistral client is not initialized")
+            if not self.function_calling_service:
+                raise ValueError("Function calling service is not initialized")
                 
-            # Step 1 & 2: Send user query with tools and get model response
-            response = self.client.chat.complete(
-                model=model,
-                messages=messages,
-                tools=self.get_function_definitions(),
-                tool_choice="auto",  # Let model decide when to use tools
-                parallel_tool_calls=True,  # Allow parallel function calls
-                temperature=0.5,
-                max_tokens=1024
-            )
-            
-            return response
+            return self.function_calling_service.query_vlm_with_function_calling(messages, model)
             
         except Exception as e:
             logger.error(f"Error in Mistral API call: {e}")
             raise
 
-    def process_function_calls(self, messages: List[Dict], response: Any) -> str:
+    def process_function_calls(self, messages: List[Dict], response: Any) -> Dict:
         """
-        Process function calls from model response and generate final answer.
-        Implements steps 3 & 4 of Mistral's function calling process.
+        Process function calls from model response using FunctionCallingService.
         """
         try:
-            # Add assistant message to conversation
-            messages.append(response.choices[0].message)
-            
-            # Step 3: Execute function calls if any
-            if hasattr(response.choices[0].message, 'tool_calls') and response.choices[0].message.tool_calls:
+            if not self.function_calling_service:
+                raise ValueError("Function calling service is not initialized")
                 
-                for tool_call in response.choices[0].message.tool_calls:
-                    function_name = tool_call.function.name
-                    function_args = json.loads(tool_call.function.arguments)
-                    
-                    logger.info(f"Executing function: {function_name} with args: {function_args}")
-                    
-                    # Execute the function
-                    function_result = self._execute_function(function_name, function_args)
-                    
-                    # Add function result to messages
-                    messages.append({
-                        "role": "tool",
-                        "name": function_name,
-                        "content": function_result,
-                        "tool_call_id": tool_call.id
-                    })
-                
-                # Step 4: Generate final answer with function results
-                final_response = self.client.chat.complete(
-                    model=self.llm_model,
-                    messages=messages,
-                    temperature=0.5,
-                    max_tokens=1024
-                )
-                
-                return final_response.choices[0].message.content
-            
-            else:
-                # No function calls, return direct response
-                return response.choices[0].message.content
+            return self.function_calling_service.process_function_calls(messages, response)
                 
         except Exception as e:
             logger.error(f"Error processing function calls: {e}")
-            return f"Error processing request: {str(e)}"
+            return {
+                "initial_response": "Processing your request...",
+                "sources": [],
+                "final_response": f"Error processing request: {str(e)}",
+                "tool_calls": []
+            }
 
     def is_query_relevant(self, query: str) -> bool:
         """
@@ -355,9 +138,9 @@ class ChatbotService:
                 
                 messages = [{"role": "user", "content": summary_prompt}]
                 response = self.query_mistral_with_function_calling(messages, self.llm_model)
-                final_answer = self.process_function_calls(messages, response)
+                result = self.process_function_calls(messages, response)
                 
-                return json.dumps({"message": final_answer})
+                return json.dumps({"message": result["final_response"], "result": result})
             
             # For regular queries, use function calling with system prompt
             system_prompt = PromptMessage.FUNCTION_CALLING_SYSTEM_PROMPT
@@ -368,9 +151,9 @@ class ChatbotService:
             ]
             
             response = self.query_mistral_with_function_calling(messages, self.llm_model)
-            final_answer = self.process_function_calls(messages, response)
+            result = self.process_function_calls(messages, response)
             
-            return json.dumps({"message": final_answer})
+            return json.dumps({"message": result["final_response"], "result": result})
             
         except Exception as e:
             logger.error(f"Error generating answer: {e}")
@@ -418,6 +201,15 @@ class ChatbotService:
             arxiv_service=self.arxiv_service,
             vector_service=self.vector,
             llm_client=self.client
+        )
+        
+        # Initialize function calling service
+        self.function_calling_service = FunctionCallingService(
+            arxiv_service=self.arxiv_service,
+            vector_service=self.vector,
+            design_recommendation_service=self.design_recommendation_service,
+            vlm_client=self.client,
+            vlm_model=self.llm_model
         )
         
         logger.info(f"Enhanced chatbot service initialized with Mistral AI function calling and VLM model: {self.llm_model}")
