@@ -15,7 +15,7 @@ function App() {
   const [pdfFile, setPdfFile] = useState(null);
   const messagesEndRef = useRef(null);
 
-  const backendUrl = "";
+  const backendUrl = process.env.REACT_APP_API_URL || "http://localhost:8000";
   const endpoint = "/api/chat";
   const url = `${backendUrl}${endpoint}`;
 
