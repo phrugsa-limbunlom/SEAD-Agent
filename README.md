@@ -6,7 +6,25 @@
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Docker](https://img.shields.io/badge/docker-supported-blue.svg)
 
+<img width="1850" height="856" alt="image" src="https://github.com/user-attachments/assets/c6a499f3-ab15-442b-bce4-3de23e4fb455" />
+
+
 A comprehensive RAG-powered document system that combines a Python FastAPI backend with a React frontend to provide intelligent analysis of research papers from structural engineering and architectural design domains. Built with **Multi-modal model with function calling capabilities**, the system automatically determines the most appropriate tools and actions based on user queries, enabling seamless document processing, research discovery, and evidence-based design recommendations.
+
+## 🎬Demo
+
+### Search Papers from Arxiv
+
+https://github.com/user-attachments/assets/fc84010e-d598-4fb7-9522-45cc08643f0f
+
+### Summarize Documents
+
+https://github.com/user-attachments/assets/b15d9322-eeee-4f41-ad8e-e69925cae50d
+
+### Design Recommendation
+
+https://github.com/user-attachments/assets/c58d35f6-d1bb-48e8-a83e-7267829f4846
+
 
 ## 📋 Table of Contents
 
@@ -14,7 +32,11 @@ A comprehensive RAG-powered document system that combines a Python FastAPI backe
 - [Project Structure](#-project-structure)
 - [Services Architecture](#-services-architecture)
 - [Data Models](#-data-models)
-- [Usage Examples](#-usage-examples)
+- [Usage Ex
+
+https://github.com/user-attachments/assets/ac7e628c-73d5-4149-9463-da7206f017ec
+
+amples](#-usage-examples)
 - [System Requirements](#-system-requirements)
 - [Installation and Setup](#-installation-and-setup)
 - [Docker Deployment](#-docker-deployment)
@@ -26,6 +48,10 @@ A comprehensive RAG-powered document system that combines a Python FastAPI backe
 ## 🚀 Key Features
 
 The system uses **Mistral AI's function calling capabilities** to automatically determine the appropriate action based on user queries:
+
+
+https://github.com/user-attachments/assets/bd39b835-0454-4a42-8304-b09260f3827b
+
 
 1. **Document Summarization**: Upload PDFs for intelligent analysis and summarization using Mistral's VLM (Vision Language Model) for document understanding
 2. **Q&A from Vector Database**: Ask questions about uploaded documents using semantic search and vector-based retrieval
@@ -90,7 +116,7 @@ The system uses **Mistral AI's function calling capabilities** to automatically 
 The main orchestration service that handles:
 - **Function Calling**: Uses Mistral AI's function calling to automatically determine which tools to use
 - **Document Processing**: Handles PDF uploads and text extraction using PyMuPDF
-- **LLM Integration**: Connects with Mistral API for intelligent responses using VLM capabilities
+- **VLM Integration**: Connects with Mistral API for intelligent responses using VLM capabilities
 - **Service Coordination**: Orchestrates interactions between different services through automated function calls
 
 **Key Methods:**
@@ -325,7 +351,11 @@ This project is licensed under the **MIT License** - see the LICENSE file for de
 - **Multi-Modal Processing**: Enhanced VLM capabilities for processing images, diagrams, and technical drawings
 - **Additional Research Databases**: Integration with PubMed, IEEE Xplore, and other academic databases
 - **Advanced Function Calling**: More specialized functions for specific engineering domains
-- **Real-time Collaboration**: Multi-user document analysis and collaborative recommendations
+- **Rea
+
+https://github.com/user-attachments/assets/ef5af3ce-fc29-4ae7-bba7-4ceef7350704
+
+l-time Collaboration**: Multi-user document analysis and collaborative recommendations
 - **Enhanced Visualization**: Interactive charts, graphs, and technical diagrams
 - **Offline Capabilities**: Local model deployment for secure environments
 
