@@ -1,4 +1,6 @@
-# RAG-Powered Document System for Structural Engineering and Architectural Design
+<h1 align="center"> RAG-Powered Document System for Structural Engineering and Architectural Design </h1>
+
+<div align="center">
 
 ![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
 ![React](https://img.shields.io/badge/react-18.2.0-blue.svg)
@@ -6,8 +8,10 @@
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Docker](https://img.shields.io/badge/docker-supported-blue.svg)
 
+</div>
+<br>
 <img width="1850" height="856" alt="image" src="https://github.com/user-attachments/assets/c6a499f3-ab15-442b-bce4-3de23e4fb455" />
-
+<br>
 
 A comprehensive RAG-powered document system that combines a Python FastAPI backend with a React frontend to provide intelligent analysis of research papers from structural engineering and architectural design domains. Built with **Multi-modal model with function calling capabilities**, the system automatically determines the most appropriate tools and actions based on user queries, enabling seamless document processing, research discovery, and evidence-based design recommendations.
 
