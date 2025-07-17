@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { FaRobot, FaSearch, FaLightbulb, FaFileAlt, FaPaperclip, FaBook, FaArrowRight, FaExternalLinkAlt, FaUser, FaGlobe } from "react-icons/fa";
+import { FaRobot, FaSearch, FaLightbulb, FaFileAlt, FaPaperclip, FaBook, FaArrowRight, FaExternalLinkAlt, FaUser, FaGlobe, FaQuestionCircle } from "react-icons/fa";
 import { Send, Upload, X } from "lucide-react";
 import "./App.css";
 
@@ -233,11 +233,11 @@ function App() {
     <div className="welcome-message">
       <div className="welcome-header">
         <FaRobot className="welcome-icon" />
-        <h2>Welcome to Your AI Research Assistant</h2>
+        <h2>Welcome to the AI Research Assistant</h2>
       </div>
       <p className="welcome-description">
-        I'm specialized in structural engineering and architectural design research. 
-        I can help you explore academic papers, get design recommendations, and analyze documents.
+        This system specializes in structural engineering and architectural design research. 
+        It provides comprehensive support for exploring academic papers, generating design recommendations, and analyzing documents.
       </p>
       
       <div className="welcome-capabilities">
@@ -253,7 +253,7 @@ function App() {
           <FaLightbulb className="capability-icon" />
           <div>
             <h3>Get Design Recommendations</h3>
-            <p>Receive evidence-based design suggestions for your structural and architectural projects</p>
+            <p>Receive evidence-based design suggestions for structural and architectural projects</p>
           </div>
         </div>
         
@@ -264,10 +264,18 @@ function App() {
             <p>Upload PDF documents for comprehensive analysis and summarization</p>
           </div>
         </div>
+        
+        <div className="capability-item">
+          <FaQuestionCircle className="capability-icon" />
+          <div>
+            <h3>Q&A Assistance</h3>
+            <p>Ask questions about structural engineering concepts, building codes, design standards, and get expert-level answers</p>
+          </div>
+        </div>
       </div>
       
       <div className="welcome-examples">
-        <h3>Try asking me:</h3>
+        <h3>Example queries:</h3>
         <div className="example-queries">
           <div className="example-query" onClick={() => setInput("Find recent papers on seismic design of tall buildings")}>
             <FaArrowRight className="example-icon" />
@@ -280,6 +288,10 @@ function App() {
           <div className="example-query" onClick={() => setInput("Recommend sustainable materials for high-rise construction")}>
             <FaArrowRight className="example-icon" />
             "Recommend sustainable materials for high-rise construction"
+          </div>
+          <div className="example-query" onClick={() => setInput("What are the key differences between moment frames and braced frames?")}>
+            <FaArrowRight className="example-icon" />
+            "What are the key differences between moment frames and braced frames?"
           </div>
         </div>
       </div>
@@ -354,16 +366,12 @@ function App() {
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
       .replace(/`(.*?)`/g, '<code>$1</code>')
-      .replace(/#{3}\s+(.*?)(\n|$)/g, '<h3>$1</h3>')
-      .replace(/#{2}\s+(.*?)(\n|$)/g, '<h2>$1</h2>')
-      .replace(/#{1}\s+(.*?)(\n|$)/g, '<h1>$1</h1>')
-      .replace(/^\s*[-*]\s+(.*)$/gm, '<li>$1</li>')
-      .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
-      .replace(/^\s*\d+\.\s+(.*)$/gm, '<li>$1</li>')
-      .replace(/(<li>.*<\/li>)/gs, (match) => {
-        if (match.includes('<ul>')) return match;
-        return '<ol>' + match + '</ol>';
-      })
+      .replace(/^#{4}\s+(.*?)$/gm, '<h4>$1</h4>')
+      .replace(/^#{3}\s+(.*?)$/gm, '<h3>$1</h3>')
+      .replace(/^#{2}\s+(.*?)$/gm, '<h2>$1</h2>')
+      .replace(/^#{1}\s+(.*?)$/gm, '<h1>$1</h1>')
+      .replace(/^\s*[-*]\s+(.*)$/gm, '• $1')
+      .replace(/^\s*\d+\.\s+(.*)$/gm, '$1')
       .replace(/\n/g, '<br>');
   };
 
@@ -373,7 +381,7 @@ function App() {
         <header className="App-header">
           <h1>AI Research Assistant</h1>
           <p style={{ margin: "0.5rem 0 0 0", color: "#8B949E", fontSize: "0.9rem" }}>
-            Your intelligent companion for structural engineering & architectural research
+            Intelligent companion for structural engineering & architectural research
           </p>
         </header>
       )}
@@ -494,7 +502,7 @@ function App() {
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about research papers, get design recommendations, or upload a PDF to summarize..."
+              placeholder="Search research papers, request design recommendations, or upload a PDF for analysis..."
               disabled={loading}
               className="text-input"
               rows="1"
