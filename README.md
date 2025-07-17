@@ -26,8 +26,7 @@ structural-rag-agent/
 │   │   ├── data/                  # Data models and schemas
 │   │   │   ├── ChatMessage.py     # Chat message models
 │   │   │   ├── ChatbotResponse.py # Response models
-│   │   │   ├── DocumentMetadata.py # Document metadata management
-│   │   │   └── SearchAgentState.py # Search agent state management
+│   │   │   └── DocumentMetadata.py # Document metadata management
 │   │   ├── constants/             # Application constants
 │   │   │   └── PromptMessage.py   # Standardized prompt templates
 │   │   └── utils/                 # Utility functions
@@ -123,7 +122,6 @@ Generates evidence-based design recommendations:
 ### Communication
 - **ChatMessage**: User message structure
 - **ChatbotResponse**: Standardized response format
-- **SearchAgentState**: State management for search operations
 
 ## 🎯 Usage Examples
 
