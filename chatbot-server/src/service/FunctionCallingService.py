@@ -295,14 +295,15 @@ class FunctionCallingService:
                             result_data = json.loads(function_result)
                             if "papers" in result_data:
                                 for i, paper in enumerate(result_data["papers"][:7]):  # Limit to 7 sources like Perplexity
-                                    sources.append({
+                                    source_item = {
                                         "id": f"arxiv_{i+1}",
                                         "title": paper["title"][:100] + "..." if len(paper["title"]) > 100 else paper["title"],
                                         "url": paper["pdf_url"],
                                         "type": "ARXIV PAPER",
                                         "authors": ", ".join(paper["authors"][:3]) + (" et al." if len(paper["authors"]) > 3 else ""),
                                         "published": paper["published"]
-                                    })
+                                    }
+                                    sources.append(json.dumps(source_item))
                         except (json.JSONDecodeError, KeyError) as e:
                             logger.error(f"Error parsing ArXiv results: {e}")
                     
