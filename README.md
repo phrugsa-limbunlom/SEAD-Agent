@@ -34,8 +34,6 @@ https://github.com/user-attachments/assets/c58d35f6-d1bb-48e8-a83e-7267829f4846
 - [Data Models](#-data-models)
 - [Usage Ex
 
-https://github.com/user-attachments/assets/ac7e628c-73d5-4149-9463-da7206f017ec
-
 amples](#-usage-examples)
 - [System Requirements](#-system-requirements)
 - [Installation and Setup](#-installation-and-setup)
