@@ -47,10 +47,6 @@ amples](#-usage-examples)
 
 The system uses **Mistral AI's function calling capabilities** to automatically determine the appropriate action based on user queries:
 
-
-https://github.com/user-attachments/assets/bd39b835-0454-4a42-8304-b09260f3827b
-
-
 1. **Document Summarization**: Upload PDFs for intelligent analysis and summarization using Mistral's VLM (Vision Language Model) for document understanding
 2. **Q&A from Vector Database**: Ask questions about uploaded documents using semantic search and vector-based retrieval
 3. **ArXiv Research Search**: Automatically search and retrieve relevant research papers from arXiv when needed
