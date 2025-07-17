@@ -273,19 +273,7 @@ User: "Find papers on steel frame design and give me recommendations"
 
 ## 🐳 Docker Deployment
 
-### **Single Container Build**
-```bash
-# Build the Docker image
-docker build -t rag-arxiv-image .
-
-# Run the application
-docker run -p 8080:8080 rag-arxiv-image
-
-# Run tests
-docker run rag-arxiv-image python /home/src/tests/run_tests.py
-```
-
-### **Docker Compose (Recommended)**
+### **Docker Compose**
 ```bash
 # Build and run with Docker Compose
 docker-compose up --build
