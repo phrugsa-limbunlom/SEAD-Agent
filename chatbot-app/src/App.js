@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { FaRobot, FaSearch, FaLightbulb, FaFileAlt, FaPaperclip, FaBook, FaArrowRight } from "react-icons/fa";
+import { FaRobot, FaSearch, FaLightbulb, FaFileAlt, FaPaperclip, FaBook, FaArrowRight, FaExternalLinkAlt, FaUser, FaGlobe } from "react-icons/fa";
 import { Send, Upload, X } from "lucide-react";
 import "./App.css";
 
@@ -69,57 +69,164 @@ function App() {
     setPdfFile(null);
   };
 
-  const renderFunctionCallResult = (result) => {
-    if (!result) return null;
+  // New component for displaying sources in Perplexity style
+  const SourcesDisplay = ({ sources }) => {
+    if (!sources || sources.length === 0) return null;
 
-    if (result.function_calls && result.function_calls.length > 0) {
-      return (
-        <div className="function-call-result">
-          {result.function_calls.map((call, index) => (
-            <div key={index}>
-              <div className="function-call-header">
-                {call.function_name === "search_arxiv" && <FaSearch className="function-call-icon" />}
-                {call.function_name === "get_design_recommendations" && <FaLightbulb className="function-call-icon" />}
-                {call.function_name === "search_document" && <FaBook className="function-call-icon" />}
-                <span>{call.description}</span>
+    return (
+      <div className="sources-grid">
+        {sources.map((sourceStr, index) => {
+          try {
+            const source = JSON.parse(sourceStr);
+            return (
+              <div key={source.id || index} className="source-card">
+                <div className="source-header">
+                  <div className="source-icon">
+                    {source.type === "ARXIV PAPER" && <FaFileAlt />}
+                    {source.type === "DOCUMENT" && <FaBook />}
+                    {source.type === "WEB" && <FaGlobe />}
+                  </div>
+                  <div className="source-info">
+                    <div className="source-type">{source.type}</div>
+                    <div className="source-number">{index + 1}</div>
+                  </div>
+                </div>
+                <div className="source-content">
+                  <h4 className="source-title">{source.title}</h4>
+                  {source.authors && (
+                    <div className="source-authors">
+                      <FaUser className="author-icon" />
+                      {source.authors}
+                    </div>
+                  )}
+                  {source.published && (
+                    <div className="source-published">
+                      Published: {source.published}
+                    </div>
+                  )}
+                </div>
+                <div className="source-footer">
+                  <a 
+                    href={source.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="source-link"
+                  >
+                    <FaExternalLinkAlt />
+                    View Source
+                  </a>
+                </div>
               </div>
-              {call.function_name === "search_arxiv" && call.result && (
-                <div className="search-results">
-                  {call.result.map((paper, idx) => (
-                    <div key={idx} className="search-result-item">
-                      <div className="search-result-title">{paper.title}</div>
-                      <div className="search-result-authors">{paper.authors}</div>
-                      <div className="search-result-abstract">{paper.abstract}</div>
-                    </div>
-                  ))}
+            );
+          } catch (e) {
+            console.error("Error parsing source:", e);
+            return null;
+          }
+        })}
+      </div>
+    );
+  };
+
+  // New component for displaying tool calls
+  const ToolCallsDisplay = ({ toolCalls }) => {
+    if (!toolCalls || toolCalls.length === 0) return null;
+
+    return (
+      <div className="tool-calls-display">
+        <h3>Tools Used</h3>
+        <div className="tool-calls-grid">
+          {toolCalls.map((call, index) => (
+            <div key={index} className="tool-call-card">
+              <div className="tool-call-header">
+                <div className="tool-call-icon">
+                  {call.function_name === "search_arxiv" && <FaSearch />}
+                  {call.function_name === "get_design_recommendations" && <FaLightbulb />}
+                  {call.function_name === "search_document" && <FaBook />}
                 </div>
-              )}
-              {call.function_name === "get_design_recommendations" && call.result && (
-                <div className="design-recommendations">
-                  {call.result.map((rec, idx) => (
-                    <div key={idx} className="recommendation-item">
-                      <div className="recommendation-title">{rec.title}</div>
-                      <div className="recommendation-content">{rec.content}</div>
-                    </div>
-                  ))}
+                <div className="tool-call-info">
+                  <div className="tool-call-name">{call.display_name}</div>
+                  <div className="tool-call-description">{call.description}</div>
                 </div>
-              )}
-              {call.function_name === "search_document" && call.result && (
-                <div className="search-results">
-                  {call.result.map((doc, idx) => (
-                    <div key={idx} className="search-result-item">
-                      <div className="search-result-content">{doc.content}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              </div>
             </div>
           ))}
         </div>
-      );
-    }
+      </div>
+    );
+  };
 
-    return null;
+  // New component for Perplexity-style response display
+  const PerplexityResponse = ({ message, isStreaming, streamingText }) => {
+    const [activeTab, setActiveTab] = useState("answer");
+    const result = message.result;
+
+    if (!result) return null;
+
+    const displayText = isStreaming ? streamingText : (result.final_response || message.text);
+    const sources = result.sources || [];
+    const toolCalls = result.tool_calls || [];
+
+    return (
+      <div className="perplexity-response">
+        {/* Initial Response */}
+        {result.initial_response && (
+          <div className="initial-response">
+            <div className="initial-response-content">
+              {result.initial_response}
+            </div>
+          </div>
+        )}
+
+        {/* Tool Calls Display */}
+        <ToolCallsDisplay toolCalls={toolCalls} />
+
+        {/* Tab Navigation */}
+        <div className="response-tabs">
+          <button 
+            className={`tab-button ${activeTab === "answer" ? "active" : ""}`}
+            onClick={() => setActiveTab("answer")}
+          >
+            <FaRobot className="tab-icon" />
+            Answer
+          </button>
+          <button 
+            className={`tab-button ${activeTab === "sources" ? "active" : ""}`}
+            onClick={() => setActiveTab("sources")}
+          >
+            <FaBook className="tab-icon" />
+            Sources
+            {sources.length > 0 && <span className="source-count">{sources.length}</span>}
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <div className="tab-content">
+          {activeTab === "answer" && (
+            <div className="answer-content">
+              <div 
+                className="formatted-response"
+                dangerouslySetInnerHTML={{
+                  __html: formatMessage(displayText)
+                }}
+              />
+            </div>
+          )}
+          
+          {activeTab === "sources" && (
+            <div className="sources-content">
+              {sources.length > 0 ? (
+                <SourcesDisplay sources={sources} />
+              ) : (
+                <div className="no-sources">
+                  <FaBook className="no-sources-icon" />
+                  <p>No sources available for this response.</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   const renderWelcomeMessage = () => (
@@ -213,11 +320,13 @@ function App() {
 
       setMessages(prev => {
         const updatedMessages = [...prev, newMessage];
-        setMessageQueue([{
-          text: newMessage.text,
-          index: prev.length,
-          streaming: true
-        }]);
+        if (response.result && response.result.final_response) {
+          setMessageQueue([{
+            text: response.result.final_response,
+            index: prev.length,
+            streaming: true
+          }]);
+        }
         return updatedMessages;
       });
 
@@ -239,11 +348,22 @@ function App() {
   };
 
   const formatMessage = (message) => {
-    // Basic markdown-like formatting
+    // Enhanced markdown-like formatting
     return message
+      .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
       .replace(/`(.*?)`/g, '<code>$1</code>')
+      .replace(/#{3}\s+(.*?)(\n|$)/g, '<h3>$1</h3>')
+      .replace(/#{2}\s+(.*?)(\n|$)/g, '<h2>$1</h2>')
+      .replace(/#{1}\s+(.*?)(\n|$)/g, '<h1>$1</h1>')
+      .replace(/^\s*[-*]\s+(.*)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+      .replace(/^\s*\d+\.\s+(.*)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>)/gs, (match) => {
+        if (match.includes('<ul>')) return match;
+        return '<ol>' + match + '</ol>';
+      })
       .replace(/\n/g, '<br>');
   };
 
@@ -262,44 +382,76 @@ function App() {
           {messages.length === 0 && !loading && renderWelcomeMessage()}
           {messages.map((message, index) => (
             <div key={index} className={`message ${message.sender}`}>
-              {message.sender === "bot" && (
-                <FaRobot className="bot-icon" />
-              )}
-              <div className="message-content">
-                {message.isPdfSummary && (
-                  <div className="summary-badge">
-                    <FaFileAlt />
-                    Document Summary
+              {message.sender === "user" && (
+                <div className="user-message-container">
+                  <div className="user-avatar">
+                    <FaUser />
                   </div>
-                )}
-                <div 
-                  dangerouslySetInnerHTML={{
-                    __html: formatMessage(
-                      index === streamingIndex && message.streaming 
-                        ? streamingText 
-                        : message.text
-                    )
-                  }}
-                />
-                {message.result && renderFunctionCallResult(message.result)}
-              </div>
+                  <div className="user-message-content">
+                    <div className="user-name">You</div>
+                    <div className="user-text">{message.text}</div>
+                  </div>
+                </div>
+              )}
+              {message.sender === "bot" && (
+                <div className="bot-message-container">
+                  <div className="bot-avatar">
+                    <FaRobot />
+                  </div>
+                  <div className="bot-message-content">
+                    <div className="bot-name">AI Assistant</div>
+                    {message.result && (message.result.sources || message.result.tool_calls) ? (
+                      <PerplexityResponse 
+                        message={message} 
+                        isStreaming={index === streamingIndex && message.streaming}
+                        streamingText={streamingText}
+                      />
+                    ) : (
+                      <div className="simple-response">
+                        <div 
+                          dangerouslySetInnerHTML={{
+                            __html: formatMessage(
+                              index === streamingIndex && message.streaming 
+                                ? streamingText 
+                                : message.text
+                            )
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              {message.sender === "error" && (
+                <div className="error-message-container">
+                  <div className="error-content">
+                    <div className="error-text">{message.text}</div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
           {loading && (
             <div className="message bot">
-              <FaRobot className="bot-icon" />
-              <div className="message-content">
-                <div className="typing-indicator">
-                  <span></span>
-                  <span></span>
-                  <span></span>
+              <div className="bot-message-container">
+                <div className="bot-avatar">
+                  <FaRobot />
+                </div>
+                <div className="bot-message-content">
+                  <div className="bot-name">AI Assistant</div>
+                  <div className="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
                 </div>
               </div>
             </div>
           )}
           <div ref={messagesEndRef} />
         </div>
-        <form onSubmit={handleSubmit} className="input-form">
+        
+        <form className="input-form" onSubmit={handleSubmit}>
           {pdfFile && (
             <div className="file-upload-container">
               <div className="file-input-label file-selected">
@@ -337,6 +489,7 @@ function App() {
               </label>
             </div>
           )}
+          
           <div className="input-container">
             <textarea
               value={input}
