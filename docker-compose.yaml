@@ -1,40 +1,26 @@
 services:
-  # Frontend service (React app)
-  chatbot-app:
-    build:
-      context: ./chatbot-app
-      dockerfile: Dockerfile
-      target: development
-    ports:
-      - "3000:3000"
-    depends_on:
-      - chatbot-server
-    environment:
-      - REACT_APP_API_URL=http://localhost:8000
-    volumes:
-      - ./chatbot-app:/app
-      - /app/node_modules
-    stdin_open: true
-    tty: true
-    networks:
-      - chatbot-network
-
-  # Backend service (FastAPI server)
-  chatbot-server:
+  chatbot-backend:
     build:
       context: ./chatbot-server
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
+    env_file:
+      - chatbot-server/.env
+    networks:
+      - chatbot-network
+
+  c-app:
+    build:
+      context: ./chatbot-app
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
     environment:
-      - PYTHONPATH=/app
-      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
-    volumes:
-      - ./chatbot-server:/app
-      - ./tests:/app/tests
+      - REACT_APP_BACKEND_URL=http://localhost:8000
     networks:
       - chatbot-network
 
 networks:
   chatbot-network:
-    driver: bridge 
+    driver: bridge
