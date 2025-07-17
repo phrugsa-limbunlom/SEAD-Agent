@@ -178,7 +178,7 @@ class ChatbotService:
         self.client = Mistral(api_key=api_key)
 
         # model configuration
-        file_path = "/home/src/backend/model.yaml"
+        file_path = "/app/model.yaml"
         if os.path.exists(file_path):
             model_config = FileUtils.load_yaml(file_path)
             if isinstance(model_config, dict):
