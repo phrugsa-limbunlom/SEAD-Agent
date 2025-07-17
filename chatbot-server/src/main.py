@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Any, Dict
+from typing import AsyncGenerator
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, Request, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +12,8 @@ from fastapi.responses import FileResponse
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from service.ChatbotService import ChatbotService
+from data.ChatMessage import ChatMessage
+from data.ChatbotResponse import ChatbotResponse
 
 # configure logging
 logging.basicConfig(
@@ -62,12 +64,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.post("/api/chat")
+@app.post("/api/chat", response_model=ChatbotResponse)
 async def process_chat_message(
         request: Request,
         message: str = Form(...),
         document: UploadFile = File(None)
-    ) -> Dict[str, Any]:
+    ) -> ChatbotResponse:
     """
     Endpoint to process incoming chat messages and generate a response via ChatbotService.
 
@@ -81,29 +83,41 @@ async def process_chat_message(
         request (Request): The HTTP request object containing app state (e.g., ChatbotService).
 
     Returns:
-        Dict[str, Any]: A dictionary containing the chatbot's response
+        ChatbotResponse: A structured response containing the chatbot's response
                         and any relevant message content.
 
     Raises:
         HTTPException: If there's an error during message processing.
     """
-    logger.info(f"Message: {message}")
+    # Create ChatMessage object
+    chat_message = ChatMessage(message=message, document=document)
 
-    logger.info(f"Filename: {document.filename if document else 'No file uploaded'}")
+    logger.info(f"Message: {chat_message.message}")
+    logger.info(f"Filename: {chat_message.document.filename if chat_message.document else 'No file uploaded'}")
 
     service: ChatbotService = request.app.state.service
 
-
     try:
         logger.info("Waiting for response...")
-        content = await document.read() if document else None
+        content = await chat_message.document.read() if chat_message.document else None
         if content is not None:
-            filename = document.filename if document else None
-            response = json.loads(service.generate_answer(query=message, pdf_filename=filename, pdf_content=content))
+            filename = chat_message.document.filename if chat_message.document else None
+            response_json = service.generate_answer(query=chat_message.message, pdf_filename=filename, pdf_content=content)
         else:
-            response = json.loads(service.generate_answer(query=message))
-        logger.info(f"Response received: {response}")
-        return response
+            response_json = service.generate_answer(query=chat_message.message)
+        
+        # Parse the JSON response
+        response_data = json.loads(response_json)
+        
+        # Create ChatbotResponse object
+        chatbot_response = ChatbotResponse(
+            message=response_data.get("message", ""),
+            result=response_data.get("result")
+        )
+        
+        logger.info(f"Response received: {chatbot_response}")
+        return chatbot_response
+        
     except Exception as e:
         logger.error(f"Error processing message: {e}")
         raise HTTPException(status_code=500, detail=str(e))

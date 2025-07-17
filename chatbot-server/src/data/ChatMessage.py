@@ -1,12 +1,14 @@
 from pydantic import BaseModel
+from typing import Optional
+from fastapi import UploadFile
 
 class ChatMessage(BaseModel):
     """
-    A Pydantic model representing a chat message.
+    A Pydantic model representing a chat message request.
 
     Attributes:
-        user (str): The user sending the message.
-        message (str): The content of the user's message.
+        message (str): The user's message content.
+        document (Optional[UploadFile]): Optional PDF document for summarization or Q&A.
     """
-    user: str
     message: str
+    document: Optional[UploadFile] = None
