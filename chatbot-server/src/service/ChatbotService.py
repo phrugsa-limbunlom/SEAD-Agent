@@ -35,20 +35,20 @@ class ChatbotService:
 
     def __init__(self, template: Optional[str] = None,
                  client: Optional[Any] = None,
-                 llm_model: Optional[str] = None,
+                 vlm_model: Optional[str] = None,
                  embedding_model: Optional[str] = None,
                  vector: Optional[VectorStoreService] = None):
 
         self.template = template
         self.client = client
-        self.llm_model = llm_model or "pixtral-12b-2409"  # Default to VLM model
-        self.embedding_model = embedding_model
+        self.vlm_model = vlm_model or "pixtral-12b-2409"
+        self.embedding_model = embedding_model or "mistral-embed"
         self.vector = vector
         
         # Add new services
         self.arxiv_service = ArxivService()
-        self.design_recommendation_service = None  # Will be initialized in initialize_service
-        self.function_calling_service = None  # Will be initialized in initialize_service
+        self.design_recommendation_service = None 
+        self.function_calling_service = None
 
     def get_function_definitions(self) -> List[Dict]:
         """
@@ -104,7 +104,7 @@ class ChatbotService:
 
             messages = [{"role": "user", "content": relevance_prompt}]
             response = self.client.chat.complete(
-                model=self.llm_model,
+                model=self.vlm_model,
                 messages=messages,
                 temperature=0.1,
                 max_tokens=10
@@ -137,7 +137,7 @@ class ChatbotService:
                 summary_prompt = PromptMessage.DOCUMENT_SUMMARIZATION_PROMPT.format(text=text, query=query)
                 
                 messages = [{"role": "user", "content": summary_prompt}]
-                response = self.query_mistral_with_function_calling(messages, self.llm_model)
+                response = self.query_mistral_with_function_calling(messages, self.vlm_model)
                 result = self.process_function_calls(messages, response)
                 
                 return json.dumps({"message": result["final_response"], "result": result})
@@ -150,7 +150,7 @@ class ChatbotService:
                 {"role": "user", "content": query}
             ]
             
-            response = self.query_mistral_with_function_calling(messages, self.llm_model)
+            response = self.query_mistral_with_function_calling(messages, self.vlm_model)
             result = self.process_function_calls(messages, response)
             
             return json.dumps({"message": result["final_response"], "result": result})
@@ -175,24 +175,16 @@ class ChatbotService:
         if not api_key:
             raise ValueError("MISTRAL_API_KEY environment variable is required")
         
-        # NOTE: Uncomment after installing mistralai package
-        # self.client = Mistral(api_key=api_key)
-        self.client = None  # Placeholder until mistralai is installed
+        self.client = Mistral(api_key=api_key)
 
         # model configuration
         file_path = "/home/src/backend/model.yaml"
         if os.path.exists(file_path):
             model_config = FileUtils.load_yaml(file_path)
             if isinstance(model_config, dict):
-                self.llm_model = model_config.get("LLM", "pixtral-12b-2409")
-                self.embedding_model = model_config.get("EMBEDDING", "mistral-embed")
-            else:
-                self.llm_model = "pixtral-12b-2409"  # VLM model
-                self.embedding_model = "mistral-embed"
-        else:
-            # Default values if config file doesn't exist
-            self.llm_model = "pixtral-12b-2409"  # VLM model
-            self.embedding_model = "mistral-embed"
+                self.vlm_model = model_config["VLM"]
+                self.embedding_model = model_config["EMBEDDING"]
+    
         
         self.vector = VectorStoreService(embedding_model=self.embedding_model)
         
@@ -209,9 +201,9 @@ class ChatbotService:
             vector_service=self.vector,
             design_recommendation_service=self.design_recommendation_service,
             vlm_client=self.client,
-            vlm_model=self.llm_model
+            vlm_model=self.vlm_model
         )
         
-        logger.info(f"Enhanced chatbot service initialized with Mistral AI function calling and VLM model: {self.llm_model}")
+        logger.info(f"Enhanced chatbot service initialized with Mistral AI function calling and VLM model: {self.vlm_model}")
     
 
