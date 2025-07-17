@@ -225,12 +225,14 @@ class FunctionCallingService:
     def generate_initial_response(self, query: str) -> str:
         """
         Generate an initial response that shows what the AI is planning to do.
-        This follows the PickSmart pattern of showing analysis intent.
+        This follows the pattern of showing analysis intent.
         """
         # Determine what actions will be taken based on the query
         query_lower = query.lower()
         
-        if any(term in query_lower for term in ["search", "find", "papers", "research", "arxiv"]):
+        if any(term in query_lower for term in ["summarize", "summary", "summarization"]) and any(term in query_lower for term in ["paper", "article", "study"]):
+            return f"I'll summarize the paper highlighting its key findings, methodology, and conclusions."
+        elif any(term in query_lower for term in ["search", "find", "papers", "research", "arxiv"]):
             if any(term in query_lower for term in ["recent", "latest", "new", "current"]):
                 return f"I'll search for the latest research papers on '{query}' to provide you with current findings and evidence-based insights."
             else:
@@ -238,8 +240,8 @@ class FunctionCallingService:
         
         elif any(term in query_lower for term in ["recommend", "design", "how to", "best practices", "approach"]):
             return f"I'll analyze current research and generate evidence-based design recommendations for '{query}' based on the latest findings."
-        
-        elif any(term in query_lower for term in ["analyze", "summarize", "explain", "what is", "how does"]):
+            
+        elif any(term in query_lower for term in ["analyze", "explain", "what is", "how does"]):
             return f"I'll analyze the available research and provide a comprehensive explanation of '{query}' based on current literature."
         
         else:

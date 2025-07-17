@@ -1,5 +1,6 @@
 import json
 import logging
+from math import log
 import os
 from typing import Optional, Any, List, Dict
 import pymupdf
@@ -121,13 +122,15 @@ class ChatbotService:
         The model will automatically determine which functions to call based on the query.
         """
         try:
-            if not self.is_query_relevant(query):
-                return json.dumps({"message": PromptMessage.DEFAULT_MESSAGE})
-
+             
             # Handle PDF upload for summarization
             if pdf_content:
                 doc = pymupdf.open(stream=pdf_content, filetype="pdf")
                 text = "\n".join([p.get_text() for p in doc])
+                
+                # Check if the document is relevant to the topic
+                if not self.is_query_relevant(query + text):
+                    return json.dumps({"message": PromptMessage.DEFAULT_MESSAGE})
                 
                 # Store in vector store
                 if self.vector and pdf_filename:
@@ -141,7 +144,10 @@ class ChatbotService:
                 result = self.process_function_calls(messages, response)
                 
                 return json.dumps({"message": result["final_response"], "result": result})
-            
+
+            if not self.is_query_relevant(query):
+                return json.dumps({"message": PromptMessage.DEFAULT_MESSAGE})
+
             # For regular queries, use function calling with system prompt
             system_prompt = PromptMessage.FUNCTION_CALLING_SYSTEM_PROMPT
             

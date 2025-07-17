@@ -84,9 +84,9 @@ class PromptMessage:
     Evaluate whether the following query is relevant to structural engineering, architectural design, or research paper analysis: {query}
     
     The query is relevant if it relates to:
+    - Research paper analysis and summarization (Key word: Summarize this paper, What is the paper about?)
     - Structural engineering concepts (beams, columns, foundations, load analysis, etc.)
     - Architectural design principles (space planning, building systems, materials, etc.)
-    - Research paper analysis and summarization
     - Design recommendations and best practices
     - Building codes and standards
     - Construction materials and methods
