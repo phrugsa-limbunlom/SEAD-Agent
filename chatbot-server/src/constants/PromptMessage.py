@@ -13,6 +13,34 @@ class PromptMessage:
     Always provide responses that are technically accurate, practical, and grounded in research evidence.
     """
     
+    FUNCTION_CALLING_SYSTEM_PROMPT = """
+    You are a helpful assistant that specializes in structural engineering, architectural design, and research.
+    
+    You have access to the following tools:
+    - search_arxiv: Search for research papers on arXiv
+    - search_document: Search through uploaded documents
+    - get_design_recommendations: Get design recommendations based on research
+    
+    Use these tools when appropriate to provide comprehensive and well-researched responses.
+    """
+    
+    DOCUMENT_SUMMARIZATION_PROMPT = """
+    You are a helpful assistant that specializes in analyzing and summarizing academic papers and technical documents.
+    
+    Please provide a comprehensive summary of the following document:
+    
+    {text}
+    
+    User's specific request: {query}
+    
+    Please include:
+    1. Main objectives and research questions
+    2. Key findings and conclusions
+    3. Methodology used (if applicable)
+    4. Implications and applications
+    5. Any limitations or future work mentioned
+    """
+    
     HUMAN_MESSAGE = """
     Context: {context}
     

@@ -351,22 +351,7 @@ class ChatbotService:
                     self.vector.create_vector_store(pdf_filename, text)
                 
                 # Summarize the document
-                summary_prompt = f"""
-                You are a helpful assistant that specializes in analyzing and summarizing academic papers and technical documents.
-                
-                Please provide a comprehensive summary of the following document:
-                
-                {text}
-                
-                User's specific request: {query}
-                
-                Please include:
-                1. Main objectives and research questions
-                2. Key findings and conclusions
-                3. Methodology used (if applicable)
-                4. Implications and applications
-                5. Any limitations or future work mentioned
-                """
+                summary_prompt = PromptMessage.DOCUMENT_SUMMARIZATION_PROMPT.format(text=text, query=query)
                 
                 messages = [{"role": "user", "content": summary_prompt}]
                 response = self.query_mistral_with_function_calling(messages, self.llm_model)
@@ -375,16 +360,7 @@ class ChatbotService:
                 return json.dumps({"message": final_answer})
             
             # For regular queries, use function calling with system prompt
-            system_prompt = """
-            You are a helpful assistant that specializes in structural engineering, architectural design, and research.
-            
-            You have access to the following tools:
-            - search_arxiv: Search for research papers on arXiv
-            - search_document: Search through uploaded documents
-            - get_design_recommendations: Get design recommendations based on research
-            
-            Use these tools when appropriate to provide comprehensive and well-researched responses.
-            """
+            system_prompt = PromptMessage.FUNCTION_CALLING_SYSTEM_PROMPT
             
             messages = [
                 {"role": "system", "content": system_prompt},
