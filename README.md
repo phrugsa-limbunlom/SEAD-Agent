@@ -25,7 +25,7 @@ https://github.com/user-attachments/assets/fc84010e-d598-4fb7-9522-45cc08643f0f
 
 https://github.com/user-attachments/assets/b15d9322-eeee-4f41-ad8e-e69925cae50d
 
-### Design Recommendation
+### Recommend Design
 
 https://github.com/user-attachments/assets/c58d35f6-d1bb-48e8-a83e-7267829f4846
 
