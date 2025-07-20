@@ -225,26 +225,32 @@ class FunctionCallingService:
     def generate_initial_response(self, query: str) -> str:
         """
         Generate an initial response that shows what the AI is planning to do.
-        This follows the pattern of showing analysis intent.
+        This follows the pattern of showing analysis intent using LLM.
         """
-        # Determine what actions will be taken based on the query
-        query_lower = query.lower()
-        
-        if any(term in query_lower for term in ["summarize", "summary", "summarization"]) and any(term in query_lower for term in ["paper", "article", "study"]):
-            return f"I'll summarize the paper highlighting its key findings, methodology, and conclusions."
-        elif any(term in query_lower for term in ["search", "find", "papers", "research", "arxiv"]):
-            if any(term in query_lower for term in ["recent", "latest", "new", "current"]):
-                return f"I'll search for the latest research papers on '{query}' to provide you with current findings and evidence-based insights."
-            else:
-                return f"I'll search academic literature for research papers related to '{query}' to provide comprehensive analysis."
-        
-        elif any(term in query_lower for term in ["recommend", "design", "how to", "best practices", "approach"]):
-            return f"I'll analyze current research and generate evidence-based design recommendations for '{query}' based on the latest findings."
+        try:
+            if not self.vlm_client:
+                # Fallback to simple response if LLM is not available
+                return f"I'll research and analyze '{query}' to provide you with evidence-based insights and recommendations."
             
-        elif any(term in query_lower for term in ["analyze", "explain", "what is", "how does"]):
-            return f"I'll analyze the available research and provide a comprehensive explanation of '{query}' based on current literature."
-        
-        else:
+            system_prompt = PromptMessage.INITIAL_RESPONSE_PROMPT
+            
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Generate an initial response for this query: {query}"}
+            ]
+            
+            response = self.vlm_client.chat.complete(
+                model=self.vlm_model,
+                messages=messages,
+                temperature=0.3,
+                max_tokens=150
+            )
+            
+            return response.choices[0].message.content.strip()
+            
+        except Exception as e:
+            logger.error(f"Error generating initial response with LLM: {e}")
+            # Fallback to simple response
             return f"I'll research and analyze '{query}' to provide you with evidence-based insights and recommendations."
 
     def process_function_calls(self, messages: List[Dict], response: Any) -> Dict:
@@ -384,7 +390,8 @@ class FunctionCallingService:
         display_names = {
             "search_arxiv": "ArXiv Search",
             "search_document": "Document Search", 
-            "get_design_recommendations": "Design Recommendations"
+            "get_design_recommendations": "Design Recommendations",
+            "summarize_document": "Document Summarization"
         }
         return display_names.get(function_name, function_name.replace("_", " ").title())
     
