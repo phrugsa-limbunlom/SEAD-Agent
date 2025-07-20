@@ -1,21 +1,18 @@
 import json
 import logging
-from math import log
 import os
 from typing import Optional, Any, List, Dict
+
 import pymupdf
-import requests.exceptions
 from constants.PromptMessage import PromptMessage
 from dotenv import load_dotenv, find_dotenv
-from fastapi import UploadFile, File
-from mistralai import Mistral
 from langchain_core.prompts import ChatPromptTemplate
-from service.VectorStoreService import VectorStoreService
+from mistralai import Mistral
 from service.ArxivService import ArxivService
 from service.DesignRecommendationService import DesignRecommendationService
 from service.FunctionCallingService import FunctionCallingService
+from service.VectorStoreService import VectorStoreService
 from utils.file_utils import FileUtils
-import re
 
 logging.basicConfig(
     level=logging.INFO,
@@ -123,32 +120,25 @@ class ChatbotService:
         """
         try:
              
-            # Handle PDF upload for summarization
+            # extract first page from the document to verify topic is relevant
+            text = ""
             if pdf_content:
                 doc = pymupdf.open(stream=pdf_content, filetype="pdf")
-                text = "\n".join([p.get_text() for p in doc])
+                if len(doc) > 0:
+                    first_page = doc[0]
+                    text = first_page.get_text()
+
+                print(text)
+                doc.close()
                 
-                # Check if the document is relevant to the topic
+            if text is not None:
                 if not self.is_query_relevant(query + text):
                     return json.dumps({"message": PromptMessage.DEFAULT_MESSAGE})
-                
-                # Store in vector store
-                if self.vector and pdf_filename:
-                    self.vector.create_vector_store(pdf_filename, text)
-                
-                # Summarize the document
-                summary_prompt = PromptMessage.DOCUMENT_SUMMARIZATION_PROMPT.format(text=text, query=query)
-                
-                messages = [{"role": "user", "content": summary_prompt}]
-                response = self.query_mistral_with_function_calling(messages, self.vlm_model)
-                result = self.process_function_calls(messages, response)
-                
-                return json.dumps({"message": result["final_response"], "result": result})
+            else:
+                 if not self.is_query_relevant(query):
+                    return json.dumps({"message": PromptMessage.DEFAULT_MESSAGE})
 
-            if not self.is_query_relevant(query):
-                return json.dumps({"message": PromptMessage.DEFAULT_MESSAGE})
 
-            # For regular queries, use function calling with system prompt
             system_prompt = PromptMessage.FUNCTION_CALLING_SYSTEM_PROMPT
             
             messages = [
@@ -200,7 +190,7 @@ class ChatbotService:
             vector_service=self.vector,
             llm_client=self.client
         )
-        
+
         # Initialize function calling service
         self.function_calling_service = FunctionCallingService(
             arxiv_service=self.arxiv_service,
