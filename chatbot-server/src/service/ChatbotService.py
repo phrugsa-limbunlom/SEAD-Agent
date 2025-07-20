@@ -153,7 +153,7 @@ class ChatbotService:
             
         except Exception as e:
             logger.error(f"Error generating answer: {e}")
-            return json.dumps({"message": f"Error: {str(e)}"})
+            return json.dumps({"message": f"Internal Server Error. Please try again later."})
 
     def initialize_service(self) -> None:
         """
