@@ -1,10 +1,13 @@
 import json
 import logging
+import base64
 from typing import Optional, Any, List, Dict
 from datetime import datetime
 from service.VectorStoreService import VectorStoreService
 from service.ArxivService import ArxivService
 from service.DesignRecommendationService import DesignRecommendationService
+from service.DocumentSummarizationService import DocumentSummarizationService
+from constants.PromptMessage import PromptMessage
 
 logging.basicConfig(
     level=logging.INFO,
@@ -21,16 +24,18 @@ class FunctionCallingService:
     Enhanced to return structured responses in PickSmart format.
     """
 
-    def __init__(self, 
+    def __init__(self,
                  arxiv_service: Optional[ArxivService] = None,
                  vector_service: Optional[VectorStoreService] = None,
                  design_recommendation_service: Optional[DesignRecommendationService] = None,
+                 document_summarization_service: Optional[DocumentSummarizationService] = None,
                  vlm_client: Optional[Any] = None,
                  vlm_model: Optional[str] = None):
-        
+
         self.arxiv_service = arxiv_service
         self.vector_service = vector_service
         self.design_recommendation_service = design_recommendation_service
+        self.document_summarization_service = document_summarization_service
         self.vlm_client = vlm_client
         self.vlm_model = vlm_model or "pixtral-12b-2409"
 
@@ -84,7 +89,7 @@ class FunctionCallingService:
                 }
             },
             {
-                "type": "function", 
+                "type": "function",
                 "function": {
                     "name": "search_document",
                     "description": "Search through uploaded documents using semantic search. Useful for finding specific information within previously uploaded research papers or documents.",
@@ -109,7 +114,7 @@ class FunctionCallingService:
                         "type": "object",
                         "properties": {
                             "design_query": {
-                                "type": "string", 
+                                "type": "string",
                                 "description": "Specific design question or requirement (e.g., 'foundation design for soft soil', 'seismic retrofitting strategies')"
                             },
                             "domain": {
@@ -119,6 +124,39 @@ class FunctionCallingService:
                             }
                         },
                         "required": ["design_query"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "summarize_pdf_document",
+                    "description": "Summarize a PDF document provided as base64-encoded bytes using VLM with multimodal capabilities. Analyzes both text content and visual elements (images, charts, diagrams) to provide comprehensive summaries.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "pdf_document": {
+                                "type": "string",
+                                "description": "PDF document as base64-encoded string"
+                            },
+                            "file_name": {
+                                "type": "string",
+                                "description": "Name of the PDF file (for reference)",
+                                "default": "document.pdf"
+                            },
+                            "summary_type": {
+                                "type": "string",
+                                "description": "Type of summary to generate",
+                                "enum": ["brief", "detailed"],
+                                "default": "brief"
+                            },
+                            "max_chunks": {
+                                "type": "integer",
+                                "description": "Maximum number of text chunks to process (default: 5, max: 10)",
+                                "default": 5
+                            }
+                        },
+                        "required": ["pdf_document"]
                     }
                 }
             }
@@ -143,6 +181,13 @@ class FunctionCallingService:
                     design_query=function_args.get("design_query", ""),
                     domain=function_args.get("domain", "structural_architectural")
                 )
+            elif function_name == "summarize_pdf_document":
+                return self._summarize_document_function(
+                    pdf_document=function_args.get("pdf_document", ""),
+                    file_name=function_args.get("file_name", "document.pdf"),
+                    summary_type=function_args.get("summary_type", "brief"),
+                    max_chunks=function_args.get("max_chunks", 5)
+                )
             else:
                 return f"Unknown function: {function_name}"
         except Exception as e:
@@ -156,16 +201,16 @@ class FunctionCallingService:
         try:
             if not self.arxiv_service:
                 return json.dumps({"error": "ArXiv service not initialized"})
-            
+
             papers = self.arxiv_service.search_papers(query, max_results)
-            
+
             # Use helper method to handle datetime serialization
             result_data = {
                 "papers": self._make_serializable(papers),
                 "count": len(papers),
                 "query": query
             }
-            
+
             return json.dumps(result_data)
         except Exception as e:
             logger.error(f"ArXiv search error: {e}")
@@ -178,10 +223,10 @@ class FunctionCallingService:
         try:
             if not self.vector_service:
                 return json.dumps({"error": "Vector service not initialized"})
-            
+
             vector_retriever = self.vector_service.load_vector_store()
             docs = vector_retriever.get_relevant_documents(query)
-            
+
             document_results = []
             for doc in docs:
                 document_results.append({
@@ -189,13 +234,13 @@ class FunctionCallingService:
                     "source": doc.metadata.get("source", "Unknown"),
                     "relevance_score": doc.metadata.get("score", 0.0)
                 })
-            
+
             result_data = {
                 "documents": self._make_serializable(document_results),
                 "count": len(document_results),
                 "query": query
             }
-            
+
             return json.dumps(result_data)
         except Exception as e:
             logger.error(f"Document search error: {e}")
@@ -208,19 +253,81 @@ class FunctionCallingService:
         try:
             if not self.design_recommendation_service:
                 return json.dumps({"error": "Design recommendation service not initialized"})
-            
+
             recommendations = self.design_recommendation_service.generate_recommendations(design_query, domain)
-            
+
             result_data = {
                 "recommendations": self._make_serializable(recommendations),
                 "query": design_query,
                 "domain": domain
             }
-            
+
             return json.dumps(result_data)
         except Exception as e:
             logger.error(f"Design recommendation error: {e}")
             return json.dumps({"error": str(e), "recommendations": [], "query": design_query})
+
+    def _summarize_document_function(self, pdf_document: str, file_name: str = "document.pdf", summary_type: str = "brief", max_chunks: int = 5) -> str:
+        """
+        Summarize a PDF document from base64-encoded bytes using the document summarization service
+        """
+        try:
+            if not self.document_summarization_service:
+                return json.dumps({"error": "Document summarization service not initialized"})
+
+            # Validate max_chunks
+            if max_chunks > 10:
+                max_chunks = 10
+            elif max_chunks < 1:
+                max_chunks = 1
+
+            # Decode base64 PDF document with proper padding
+            try:
+                # Clean the base64 string and remove data URL prefix if present
+                pdf_document = pdf_document.strip()
+                logger.info(f"Base64 string length: {len(pdf_document)}, first 50 chars: {pdf_document[:50]}...")
+                
+                # Remove data URL prefix if present (e.g., "data:application/pdf;base64,")
+                if pdf_document.startswith("data:"):
+                    # Extract the base64 part after the comma
+                    pdf_document = pdf_document.split(",", 1)[1]
+                    logger.info(f"Removed data URL prefix, new length: {len(pdf_document)}")
+                
+                # Add padding if needed
+                padding_needed = len(pdf_document) % 4
+                if padding_needed:
+                    pdf_document += '=' * (4 - padding_needed)
+                
+                # Try to decode
+                pdf_bytes = base64.b64decode(pdf_document)
+            except Exception as e:
+                logger.error(f"Error decoding base64 PDF document: {e}")
+                # Try alternative decoding methods
+                try:
+                    # Try with urlsafe base64
+                    pdf_bytes = base64.urlsafe_b64decode(pdf_document + '=' * (4 - len(pdf_document) % 4))
+                except Exception as e2:
+                    logger.error(f"Alternative base64 decoding also failed: {e2}")
+                    return json.dumps({"error": "Invalid base64-encoded PDF document", "summary": "", "file_name": file_name})
+
+            summary_result = self.document_summarization_service.summarize_document_from_bytes(
+                pdf_bytes=pdf_bytes,
+                file_name=file_name,
+                summary_type=summary_type,
+                max_chunks=max_chunks
+            )
+
+            result_data = {
+                "summary": self._make_serializable(summary_result),
+                "file_name": file_name,
+                "summary_type": summary_type,
+                "max_chunks": max_chunks
+            }
+
+            return json.dumps(result_data)
+        except Exception as e:
+            logger.error(f"PDF document summarization error: {e}")
+            return json.dumps({"error": str(e), "summary": "", "file_name": file_name})
 
     def generate_initial_response(self, query: str) -> str:
         """
@@ -231,90 +338,111 @@ class FunctionCallingService:
             if not self.vlm_client:
                 # Fallback to simple response if LLM is not available
                 return f"I'll research and analyze '{query}' to provide you with evidence-based insights and recommendations."
-            
+
             system_prompt = PromptMessage.INITIAL_RESPONSE_PROMPT
-            
+
             messages = [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"Generate an initial response for this query: {query}"}
             ]
-            
+
             response = self.vlm_client.chat.complete(
                 model=self.vlm_model,
                 messages=messages,
                 temperature=0.3,
                 max_tokens=150
             )
-            
+
             return response.choices[0].message.content.strip()
-            
+
         except Exception as e:
             logger.error(f"Error generating initial response with LLM: {e}")
             # Fallback to simple response
             return f"I'll research and analyze '{query}' to provide you with evidence-based insights and recommendations."
 
-    def process_function_calls(self, messages: List[Dict], response: Any) -> Dict:
+    def process_function_calls(self, messages: List[Dict], response: Any, pdf_data: Optional[Dict] = None) -> Dict:
         """
         Process function calls from model response and generate structured response.
         Returns structured response with initial_response, sources, and final_response.
+        
+        Args:
+            messages: List of conversation messages
+            response: VLM response with potential function calls
+            pdf_data: Optional PDF data containing base64 encoded PDF and filename
         """
+        # Extract the original query from messages
+        original_query = ""
         try:
-            # Extract the original query from messages
-            original_query = ""
             for msg in messages:
                 if msg.get("role") == "user":
                     original_query = msg.get("content", "")
                     break
-            
+
             # Generate initial response showing intent
             initial_response = self.generate_initial_response(original_query)
-            
+
             # Initialize sources list and tool calls list
             sources = []
             tool_calls_made = []
-            
+
             # Add assistant message to conversation
             messages.append(response.choices[0].message)
-            
+
             # Execute function calls if any
             if hasattr(response.choices[0].message, 'tool_calls') and response.choices[0].message.tool_calls:
-                
+
                 for tool_call in response.choices[0].message.tool_calls:
                     function_name = tool_call.function.name
                     function_args = json.loads(tool_call.function.arguments)
-                    
+
                     logger.info(f"Executing function: {function_name} with args: {function_args}")
+
+                    # Track the tool call for UI display (filter out base64 data)
+                    display_args = function_args.copy()
+                    if function_name == "summarize_pdf_document" and "pdf_document" in display_args:
+                        # Replace base64 data with a placeholder for display
+                        display_args["pdf_document"] = "[PDF_DATA]"
                     
-                    # Track the tool call for UI display
                     tool_call_info = {
                         "function_name": function_name,
-                        "function_args": function_args,
+                        "function_args": display_args,
                         "display_name": self._get_tool_display_name(function_name),
                         "description": self._get_tool_description(function_name, function_args)
                     }
                     tool_calls_made.append(tool_call_info)
-                    
+
+                    # Handle PDF data injection for summarize_pdf_document function
+                    if function_name == "summarize_pdf_document" and pdf_data:
+
+                        function_args["pdf_document"] = pdf_data["pdf_base64"]
+                        function_args["file_name"] = pdf_data["filename"]
+
+                        logger.info(f"Injected PDF data for summarize_pdf_document function: {pdf_data['filename']}")
+
                     # Execute the function
                     function_result = self.execute_function(function_name, function_args)
-                    
+
                     # Extract sources if this is an ArXiv search
                     if function_name == "search_arxiv":
                         try:
                             result_data = json.loads(function_result)
                             if "papers" in result_data:
-                                for i, paper in enumerate(result_data["papers"][:7]):  # Limit to 7 sources like Perplexity
+                                for i, paper in enumerate(
+                                        result_data["papers"][:7]):  # Limit to 7 sources like Perplexity
                                     source_item = {
-                                        "id": f"arxiv_{i+1}",
-                                        "title": paper["title"][:100] + "..." if len(paper["title"]) > 100 else paper["title"],
+                                        "id": f"arxiv_{i + 1}",
+                                        "title": paper["title"][:100] + "..." if len(paper["title"]) > 100 else paper[
+                                            "title"],
                                         "url": paper["pdf_url"],
                                         "type": "ARXIV PAPER",
-                                        "authors": ", ".join(paper["authors"][:3]) + (" et al." if len(paper["authors"]) > 3 else ""),
+                                        "authors": ", ".join(paper["authors"][:3]) + (
+                                            " et al." if len(paper["authors"]) > 3 else ""),
                                         "published": paper["published"]
                                     }
                                     sources.append(json.dumps(source_item))
                         except (json.JSONDecodeError, KeyError) as e:
                             logger.error(f"Error parsing ArXiv results: {e}")
-                    
+
                     # Add function result to messages
                     messages.append({
                         "role": "tool",
@@ -322,34 +450,10 @@ class FunctionCallingService:
                         "content": function_result,
                         "tool_call_id": tool_call.id
                     })
-                
-                # Check if client is available before making another call
-                if not self.vlm_client:
-                    return {
-                        "initial_response": initial_response,
-                        "sources": sources,
-                        "final_response": "Error: Mistral client is not initialized for final response generation.",
-                        "tool_calls": tool_calls_made
-                    }
-                
-                # Enhanced system prompt for final response generation
-                final_system_prompt = """
-                Based on the function call results, provide a comprehensive, well-structured final analysis. 
 
-                IMPORTANT:
-                - Do NOT list individual papers or raw search results
-                - Synthesize findings into clear, actionable insights
-                - Provide evidence-based recommendations
-                - Keep response clean and professional (sources are handled separately)
-                - Focus on practical applications and key takeaways
-                - Structure your response with clear sections if appropriate
-                
-                Your response should be informative, actionable, and directly address the user's query.
-                """
-                
                 # Add system prompt to messages for final response
-                final_messages = [{"role": "system", "content": final_system_prompt}] + messages
-                
+                final_messages = [{"role": "system", "content": PromptMessage.FINAL_SYSTEM_PROMPT}] + messages
+
                 # Generate final answer with function results
                 final_response = self.vlm_client.chat.complete(
                     model=self.vlm_model,
@@ -357,14 +461,14 @@ class FunctionCallingService:
                     temperature=0.5,
                     max_tokens=1024
                 )
-                
+
                 return {
                     "initial_response": initial_response,
                     "sources": sources,
                     "final_response": final_response.choices[0].message.content,
                     "tool_calls": tool_calls_made
                 }
-            
+
             else:
                 # No function calls, return direct response with structure
                 return {
@@ -373,13 +477,13 @@ class FunctionCallingService:
                     "final_response": response.choices[0].message.content,
                     "tool_calls": tool_calls_made
                 }
-                
+
         except Exception as e:
             logger.error(f"Error processing function calls: {e}")
             return {
                 "initial_response": f"I'll analyze your query: {original_query}",
                 "sources": [],
-                "final_response": f"I encountered an error while processing your request: {str(e)}. Please try again or rephrase your question.",
+                "final_response": f"I encountered an error while processing your request. Please try again or rephrase your question.",
                 "tool_calls": []
             }
 
@@ -389,12 +493,12 @@ class FunctionCallingService:
         """
         display_names = {
             "search_arxiv": "ArXiv Search",
-            "search_document": "Document Search", 
+            "search_document": "Document Search",
             "get_design_recommendations": "Design Recommendations",
-            "summarize_document": "Document Summarization"
+            "summarize_pdf_document": "Document Summarization"
         }
         return display_names.get(function_name, function_name.replace("_", " ").title())
-    
+
     def _get_tool_description(self, function_name: str, function_args: Dict) -> str:
         """
         Get descriptive text for what the tool is doing
@@ -410,6 +514,10 @@ class FunctionCallingService:
             design_query = function_args.get("design_query", "")
             domain = function_args.get("domain", "structural_architectural")
             return f"Generating {domain} design recommendations for: {design_query}"
+        elif function_name == "summarize_pdf_document":
+            file_name = function_args.get("file_name", "document.pdf")
+            summary_type = function_args.get("summary_type", "brief")
+            return f"Generating {summary_type} multimodal summary of PDF document (text + images): {file_name}"
         else:
             return f"Executing {function_name}"
 
@@ -420,7 +528,7 @@ class FunctionCallingService:
         try:
             if not self.vlm_client:
                 raise ValueError("Mistral client is not initialized")
-                
+
             response = self.vlm_client.chat.complete(
                 model=model,
                 messages=messages,
@@ -430,9 +538,9 @@ class FunctionCallingService:
                 temperature=0.5,
                 max_tokens=1024
             )
-            
+
             return response
-            
+
         except Exception as e:
             logger.error(f"Error in Mistral API call: {e}")
             raise 

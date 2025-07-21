@@ -10,6 +10,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from mistralai import Mistral
 from service.ArxivService import ArxivService
 from service.DesignRecommendationService import DesignRecommendationService
+from service.DocumentSummarizationService import DocumentSummarizationService
 from service.FunctionCallingService import FunctionCallingService
 from service.VectorStoreService import VectorStoreService
 from utils.file_utils import FileUtils
@@ -46,6 +47,7 @@ class ChatbotService:
         # Add new services
         self.arxiv_service = ArxivService()
         self.design_recommendation_service = None 
+        self.document_summarization_service = None
         self.function_calling_service = None
 
     def get_function_definitions(self) -> List[Dict]:
@@ -55,39 +57,6 @@ class ChatbotService:
         if self.function_calling_service:
             return self.function_calling_service.get_function_definitions()
         return []
-
-    def query_mistral_with_function_calling(self, messages: List[Dict], model: str) -> Any:
-        """
-        Query Mistral API with function calling capabilities using FunctionCallingService.
-        """
-        try:
-            if not self.function_calling_service:
-                raise ValueError("Function calling service is not initialized")
-                
-            return self.function_calling_service.query_vlm_with_function_calling(messages, model)
-            
-        except Exception as e:
-            logger.error(f"Error in Mistral API call: {e}")
-            raise
-
-    def process_function_calls(self, messages: List[Dict], response: Any) -> Dict:
-        """
-        Process function calls from model response using FunctionCallingService.
-        """
-        try:
-            if not self.function_calling_service:
-                raise ValueError("Function calling service is not initialized")
-                
-            return self.function_calling_service.process_function_calls(messages, response)
-                
-        except Exception as e:
-            logger.error(f"Error processing function calls: {e}")
-            return {
-                "initial_response": "Processing your request...",
-                "sources": [],
-                "final_response": f"Error processing request: {str(e)}",
-                "tool_calls": []
-            }
 
     def is_query_relevant(self, query: str) -> bool:
         """
@@ -127,8 +96,6 @@ class ChatbotService:
                 if len(doc) > 0:
                     first_page = doc[0]
                     text = first_page.get_text()
-
-                print(text)
                 doc.close()
                 
             if text is not None:
@@ -138,17 +105,40 @@ class ChatbotService:
                  if not self.is_query_relevant(query):
                     return json.dumps({"message": PromptMessage.DEFAULT_MESSAGE})
 
-
+            import base64
+            
             system_prompt = PromptMessage.FUNCTION_CALLING_SYSTEM_PROMPT
             
+            # Prepare user message with PDF context if available
+            user_content = query
+            if pdf_content:
+                # Encode PDF as base64 with proper padding
+                pdf_base64 = base64.b64encode(pdf_content).decode('utf-8')
+                user_content = f"{query}\n\n[PDF Document Available: {pdf_filename}]"
+                
+                # Store PDF data for function calling
+                self._current_pdf_data = {
+                    'pdf_base64': pdf_base64,
+                    'filename': pdf_filename
+                }
+
             messages = [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": query}
+                {"role": "user", "content": user_content}
             ]
-            
-            response = self.query_mistral_with_function_calling(messages, self.vlm_model)
-            result = self.process_function_calls(messages, response)
-            
+
+            response = ""
+            try:
+                response = self.function_calling_service.query_vlm_with_function_calling(messages, self.vlm_model)
+            except Exception as e:
+                logger.error(f"Error querying Mistral API: {e}")
+
+            result = dict()
+            try:
+                result = self.function_calling_service.process_function_calls(messages, response, pdf_data=self._current_pdf_data if pdf_content else None)
+            except Exception as e:
+                logger.error(f"Error processing function calls: {e}")
+
             return json.dumps({"message": result["final_response"], "result": result})
             
         except Exception as e:
@@ -191,11 +181,18 @@ class ChatbotService:
             llm_client=self.client
         )
 
+        # Initialize document summarization service
+        self.document_summarization_service = DocumentSummarizationService(
+            vlm_client=self.client,
+            vlm_model=self.vlm_model
+        )
+
         # Initialize function calling service
         self.function_calling_service = FunctionCallingService(
             arxiv_service=self.arxiv_service,
             vector_service=self.vector,
             design_recommendation_service=self.design_recommendation_service,
+            document_summarization_service=self.document_summarization_service,
             vlm_client=self.client,
             vlm_model=self.vlm_model
         )

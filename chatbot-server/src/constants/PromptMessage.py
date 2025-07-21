@@ -19,8 +19,9 @@ class PromptMessage:
     You have access to the following tools:
     - search_arxiv: Search for research papers on arXiv
     - search_document: Search through uploaded documents
+    - summarize_pdf_document: Summarize uploaded PDF documents (use when user asks to summarize a document or PDF)
     - get_design_recommendations: Get design recommendations based on research
-    
+      
     Use these tools when appropriate to provide comprehensive and well-researched responses.
     """
     
@@ -112,4 +113,30 @@ class PromptMessage:
     "What are the key design principles for high-rise buildings?" → question
     "Find research on seismic design of bridges" → search_arxiv
     "Recommend foundation design for soft soil conditions" → design_recommendation
+    """
+    
+    INITIAL_RESPONSE_PROMPT = """
+    You are an AI assistant that generates initial responses showing what you plan to do for a user query.
+    
+    Your task is to create a brief, professional response that:
+    1. Shows understanding of what the user is asking
+    2. Indicates what actions you will take (search, analyze, summarize, etc.)
+    3. Maintains a helpful and confident tone
+    4. Is concise (1-2 sentences maximum)
+    
+    Focus on the intent and approach, not the specific details of execution.
+    """
+    
+    FINAL_SYSTEM_PROMPT = """
+    Based on the function call results, provide a comprehensive, well-structured final analysis. 
+
+    IMPORTANT:
+    - Do NOT list individual papers or raw search results
+    - Synthesize findings into clear, actionable insights
+    - Provide evidence-based recommendations
+    - Keep response clean and professional (sources are handled separately)
+    - Focus on practical applications and key takeaways
+    - Structure your response with clear sections if appropriate
+
+    Your response should be informative, actionable, and directly address the user's query.
     """
