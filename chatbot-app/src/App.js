@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { FaRobot, FaSearch, FaLightbulb, FaFileAlt, FaPaperclip, FaBook, FaArrowRight, FaExternalLinkAlt, FaUser, FaGlobe, FaQuestionCircle } from "react-icons/fa";
-import { Send, Upload, X } from "lucide-react";
+import { Send, X } from "lucide-react";
 import "./App.css";
 
 function App() {
@@ -300,17 +300,26 @@ function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() && !pdfFile) return;
 
-    const userMessage = { text: input, sender: "user" };
+    const userMessage = { 
+      text: input || (pdfFile ? `Uploaded document: ${pdfFile.name}` : ""), 
+      sender: "user",
+      hasFile: !!pdfFile,
+      fileName: pdfFile ? pdfFile.name : null
+    };
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     setInput("");
+    // Clear the PDF file immediately after adding to chat
+    if (pdfFile) {
+      setPdfFile(null);
+    }
     setLoading(true);
     setHideHeader(true);
 
     try {
       const formData = new FormData();
-      formData.append("message", input);
+      formData.append("message", input || `Please analyze and summarize this document: ${pdfFile.name}`);
       if (pdfFile) {
         formData.append("document", pdfFile);
       }
@@ -341,11 +350,6 @@ function App() {
         }
         return updatedMessages;
       });
-
-      // Clear the PDF file after processing
-      if (pdfFile) {
-        setPdfFile(null);
-      }
 
     } catch (err) {
       console.error(err);
@@ -398,6 +402,12 @@ function App() {
                   <div className="user-message-content">
                     <div className="user-name">You</div>
                     <div className="user-text">{message.text}</div>
+                    {message.hasFile && (
+                      <div className="file-attachment">
+                        <FaFileAlt className="file-icon" />
+                        <span className="file-name">{message.fileName}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -460,45 +470,31 @@ function App() {
         </div>
         
         <form className="input-form" onSubmit={handleSubmit}>
-          {pdfFile && (
-            <div className="file-upload-container">
-              <div className="file-input-label file-selected">
-                <FaPaperclip />
-                <span>PDF uploaded:</span>
+          <div className="input-container">
+            <label className="paperclip-button">
+              <FaPaperclip />
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={handleFileChange}
+                disabled={loading}
+                className="file-input"
+              />
+            </label>
+            
+            {pdfFile && (
+              <div className="file-preview">
                 <span className="file-name">{pdfFile.name}</span>
                 <button 
                   type="button" 
                   onClick={removeFile}
-                  style={{ 
-                    background: "none", 
-                    border: "none", 
-                    color: "#8B949E", 
-                    cursor: "pointer",
-                    marginLeft: "0.5rem"
-                  }}
+                  className="remove-file-btn"
                 >
                   <X size={16} />
                 </button>
               </div>
-            </div>
-          )}
-          {!pdfFile && (
-            <div className="file-upload-container">
-              <label className="file-input-label">
-                <Upload size={16} />
-                Upload PDF Document
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  onChange={handleFileChange}
-                  disabled={loading}
-                  className="file-input"
-                />
-              </label>
-            </div>
-          )}
-          
-          <div className="input-container">
+            )}
+            
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}

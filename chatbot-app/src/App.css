@@ -304,6 +304,54 @@ body {
   font-size: 0.85rem;
 }
 
+.paperclip-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #58A6FF;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  background: transparent;
+  border: none;
+}
+
+.paperclip-button:hover {
+  background: rgba(88, 166, 255, 0.1);
+  color: #388BFD;
+}
+
+.paperclip-button input {
+  display: none;
+}
+
+.file-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(88, 166, 255, 0.1);
+  border: 1px solid rgba(88, 166, 255, 0.3);
+  border-radius: 6px;
+  margin-right: 0.5rem;
+}
+
+.remove-file-btn {
+  background: none;
+  border: none;
+  color: #8B949E;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.remove-file-btn:hover {
+  background: rgba(139, 148, 158, 0.1);
+  color: #E6EDF3;
+}
+
 .text-input {
   flex: 1;
   background: transparent;
@@ -908,6 +956,28 @@ body {
   border-bottom-right-radius: 8px;
   font-size: 0.95rem;
   line-height: 1.5;
+}
+
+.file-attachment {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.file-icon {
+  color: #E6EDF3;
+  font-size: 1rem;
+}
+
+.file-attachment .file-name {
+  color: #E6EDF3;
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 
 .bot-message-container {
