@@ -225,7 +225,7 @@ class FunctionCallingService:
                 return json.dumps({"error": "Vector service not initialized"})
 
             vector_retriever = self.vector_service.load_vector_store()
-            docs = vector_retriever.get_relevant_documents(query)
+            docs = vector_retriever.invoke(query)
 
             document_results = []
             for doc in docs:
