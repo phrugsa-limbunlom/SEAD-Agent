@@ -87,27 +87,3 @@ class VectorStoreService:
         )
 
         return vector_retriever
-
-    def has_documents(self) -> bool:
-        """
-        Check if there are any documents in the vector store.
-        
-        Returns:
-            bool: True if documents exist, False otherwise
-        """
-        try:
-            # create client with telemetry disabled
-            client = chromadb.Client(Settings(
-                persist_directory=self.persistent_directory, 
-                anonymized_telemetry=False,
-                is_persistent=True
-            ))
-            collection = client.get_or_create_collection(self.collection)
-            
-            # Get count of documents in collection
-            count = collection.count()
-            return count > 0
-            
-        except Exception as e:
-            logger.error(f"Error checking if documents exist: {e}")
-            return False
