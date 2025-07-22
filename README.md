@@ -1,4 +1,4 @@
-<h1 align="center"> RAG-Powered Document System for Structural Engineering and Architectural Design Agent (SEAD-Agent) </h1>
+# SEAD-Agent: RAG-Powered Document System for Structural Engineering and Architectural Design
 
 <div align="center">
 
@@ -7,28 +7,26 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-latest-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Docker](https://img.shields.io/badge/docker-supported-blue.svg)
+![Mistral AI](https://img.shields.io/badge/Mistral%20AI-VLM%20%7C%20Function%20Calling-orange.svg)
 
 </div>
+
 <br>
-<img width="1850" height="856" alt="image" src="https://github.com/user-attachments/assets/c6a499f3-ab15-442b-bce4-3de23e4fb455" />
+<img width="1850" height="856" alt="SEAD-Agent Interface" src="https://github.com/user-attachments/assets/c6a499f3-ab15-442b-bce4-3de23e4fb455" />
 <br>
 
-A comprehensive RAG-powered document system that combines a Python FastAPI backend with a React frontend to provide intelligent analysis of research papers from structural engineering and architectural design domains. Built with **Multi-modal model with function calling capabilities**, the system automatically determines the most appropriate tools and actions based on user queries, enabling seamless document processing, research discovery, and evidence-based design recommendations.
+A comprehensive RAG-powered document system that combines a Python FastAPI backend with a React frontend to provide intelligent analysis of research papers from structural engineering and architectural design domains. Built with **Mistral AI's Vision Language Model (VLM) and function calling capabilities**, the system automatically determines the most appropriate tools and actions based on user queries, enabling seamless document processing, research discovery, and evidence-based design recommendations.
 
-## 🎬Demo
+## 🎬 Demo
 
-### Search Papers from Arxiv
-
+### Search Papers from ArXiv
 https://github.com/user-attachments/assets/fc84010e-d598-4fb7-9522-45cc08643f0f
 
 ### Summarize Documents
-
 https://github.com/user-attachments/assets/b15d9322-eeee-4f41-ad8e-e69925cae50d
 
 ### Recommend Design
-
 https://github.com/user-attachments/assets/c58d35f6-d1bb-48e8-a83e-7267829f4846
-
 
 ## 📋 Table of Contents
 
@@ -53,26 +51,29 @@ The system uses **Mistral AI's function calling capabilities** to automatically 
 2. **Q&A from Vector Database**: Ask questions about uploaded documents using semantic search and vector-based retrieval
 3. **ArXiv Research Search**: Automatically search and retrieve relevant research papers from arXiv when needed
 4. **Design Recommendations**: Generate evidence-based structural and architectural design recommendations based on uploaded papers or research findings
+5. **Multi-Modal Processing**: Analyze both text content and visual elements (images, charts, diagrams) in documents
+6. **Intelligent Fallback**: Automatic fallback to arXiv search when document search returns insufficient results
 
 ## 📁 Project Structure
 
 ```
-rag-arxiv-summarization/
+SEAD-Agent/
 ├── chatbot-server/                 # Python FastAPI Backend
 │   ├── src/
 │   │   ├── main.py                # FastAPI application entry point
 │   │   ├── service/               # Core business logic services
-│   │   │   ├── ChatbotService.py  # Main chatbot orchestration
-│   │   │   ├── VectorStoreService.py  # Vector storage and retrieval
-│   │   │   ├── ArxivService.py    # Research paper fetching and processing
-│   │   │   ├── DesignRecommendationService.py  # Design recommendation generation
-│   │   │   └── FunctionCallingService.py  # Function calling orchestration
+│   │   │   ├── chatbot_service.py  # Main chatbot orchestration
+│   │   │   ├── vector_store.py    # Vector storage and retrieval
+│   │   │   ├── arxiv_service.py   # Research paper fetching and processing
+│   │   │   ├── design_recom.py    # Design recommendation generation
+│   │   │   ├── function_calling.py # Function calling orchestration
+│   │   │   └── docsum.py          # Document summarization service
 │   │   ├── data/                  # Data models and schemas
-│   │   │   ├── ChatMessage.py     # Chat message models
-│   │   │   ├── ChatbotResponse.py # Response models
-│   │   │   └── DocumentMetadata.py # Document metadata management
+│   │   │   ├── chat_message.py    # Chat message models
+│   │   │   ├── chatbot_response.py # Response models
+│   │   │   └── doc_data.py        # Document data models
 │   │   ├── constants/             # Application constants
-│   │   │   └── PromptMessage.py   # Standardized prompt templates
+│   │   │   └── prompt_message.py  # Standardized prompt templates
 │   │   └── utils/                 # Utility functions
 │   │       ├── file_utils.py      # File operation utilities
 │   │       └── image_utils.py     # Image processing utilities
@@ -84,11 +85,10 @@ rag-arxiv-summarization/
 │   │   ├── App.css               # Application styles
 │   │   └── ...                   # Other React components
 │   └── package.json              # Frontend dependencies
-├── tests/                        # Test files
-│   └── run_tests.py             # Test runner
-├── docker-compose.yaml          # Docker Compose configuration
-├── Dockerfile                   # Container configuration
-└── docker-entrypoint.sh        # Container startup script
+├── docker-compose.yaml           # Docker Compose configuration
+├── Dockerfile                    # Container configuration
+├── README-docker.md             # Docker-specific documentation
+└── LICENSE                      # MIT License
 ```
 
 ## 🛠️ Services Architecture
@@ -104,53 +104,54 @@ The system uses **Mistral AI's function calling capabilities** to automatically 
 5. Results are combined into a comprehensive response
 
 **Available Functions:**
-- `search_arxiv(query, max_results)`: Search arXiv for research papers
-- `search_document(query)`: Search uploaded documents using vector similarity
+- `search_document(query)`: Search uploaded documents using vector similarity (PRIORITY function)
+- `search_arxiv(query, max_results)`: Search arXiv for research papers (fallback when document search insufficient)
 - `get_design_recommendations(design_query, domain)`: Generate evidence-based design recommendations
+- `summarize_pdf_document(pdf_document, file_name, summary_type, max_chunks)`: Summarize PDF documents with VLM
 
-### ChatbotService
+### Core Services
+
+#### ChatbotService
 The main orchestration service that handles:
 - **Function Calling**: Uses Mistral AI's function calling to automatically determine which tools to use
 - **Document Processing**: Handles PDF uploads and text extraction using PyMuPDF
 - **VLM Integration**: Connects with Mistral API for intelligent responses using VLM capabilities
 - **Service Coordination**: Orchestrates interactions between different services through automated function calls
 
-**Key Methods:**
-- `generate_answer()`: Main entry point for processing user queries with function calling
-- `query_mistral_with_function_calling()`: Interfaces with Mistral API using function calling
-- `process_function_calls()`: Executes called functions and generates final responses
-- `get_function_definitions()`: Defines available functions for the model to call
-- `is_query_relevant()`: Validates query relevance to structural/architectural design
+#### FunctionCallingService
+Manages the function calling workflow:
+- **Function Definitions**: Defines available functions for the model to call
+- **Function Execution**: Executes called functions and processes results
+- **Response Generation**: Generates structured responses with initial response, sources, and final analysis
+- **Fallback Logic**: Automatically triggers arXiv search when document search returns insufficient results
 
-### VectorStoreService
+#### VectorStoreService
 Handles document embedding and retrieval for Q&A functionality:
 - **Embedding Generation**: Uses HuggingFace models for text vectorization
 - **Similarity Search**: Semantic search with configurable thresholds
 - **Persistent Storage**: ChromaDB for vector storage and retrieval
 - **Context Retrieval**: Fetches relevant document chunks for Q&A
 
-### ArxivService
+#### ArxivService
 Specialized service for research paper discovery and analysis:
 - **Paper Search**: Intelligent search across arXiv database with relevance scoring
 - **Content Enhancement**: Adds structural engineering and design keywords
 - **Research Categories**: Supports physics, computer science, mathematics, and materials science
 - **PDF Processing**: Downloads and extracts text from research papers
 
-**Key Features:**
-- Supports research categories relevant to structural engineering and architecture
-- Relevance scoring based on title, abstract, and category matching
-- Full-text extraction from research papers
-
-### DesignRecommendationService
+#### DesignRecommendationService
 Generates evidence-based design recommendations:
 - **Research Analysis**: Processes multiple papers to extract design insights
 - **Theme Grouping**: Groups related research for coherent recommendations
 - **Confidence Scoring**: Assesses recommendation reliability
 - **Domain Specialization**: Tailored recommendations for structural and architectural design
 
-**Recommendation Domains:**
-- **Structural**: Beam design, foundations, load-bearing systems
-- **Architectural**: Space planning, materials, environmental considerations
+#### DocumentSummarizationService
+Handles PDF document analysis using VLM:
+- **Multi-Modal Analysis**: Processes both text and visual elements
+- **Text Extraction**: Extracts text content from PDFs using PyMuPDF
+- **VLM Integration**: Uses Mistral's VLM for comprehensive document understanding
+- **Summary Generation**: Creates brief or detailed summaries based on user preference
 
 ## 🔧 Data Models
 
@@ -163,8 +164,8 @@ Generates evidence-based design recommendations:
 - **DesignRecommendation**: Evidence-based design recommendations with confidence scores and supporting research papers
 
 ### Communication
-- **ChatMessage**: User message structure
-- **ChatbotResponse**: Standardized response format
+- **ChatMessage**: User message structure with optional document upload
+- **ChatbotResponse**: Standardized response format with structured data
 
 ## 🎯 Usage Examples
 
@@ -173,7 +174,7 @@ The system automatically determines which functions to call based on your query 
 ### 1. Document Summarization
 ```
 Upload a PDF + Message: "Please summarize this structural engineering paper"
-→ System automatically analyzes content using VLM → Generates intelligent summary with design focus
+→ System automatically calls summarize_pdf_document() → Generates intelligent summary with design focus
 ```
 
 ### 2. Q&A from Vector Database
@@ -200,6 +201,12 @@ User: "Find papers on steel frame design and give me recommendations"
 → System automatically calls both search_arxiv() and get_design_recommendations() → Comprehensive research-backed response
 ```
 
+### 6. Automatic Fallback
+```
+User: "What are the latest developments in concrete technology?"
+→ System calls search_document() first → If insufficient results, automatically triggers search_arxiv() → Combined response
+```
+
 ## 💻 System Requirements
 
 ### **Minimum Requirements:**
@@ -208,6 +215,11 @@ User: "Find papers on steel frame design and give me recommendations"
 - **Node.js**: 16.0 or higher
 - **Memory**: 4GB RAM
 - **Storage**: 2GB available space
+
+### **Recommended Requirements:**
+- **Memory**: 8GB RAM or higher
+- **Storage**: 5GB available space
+- **Network**: Stable internet connection for API calls
 
 ## 🚀 Installation and Setup
 
@@ -220,8 +232,8 @@ User: "Find papers on steel frame design and give me recommendations"
 ### Backend Setup
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/username/rag-arxiv-summarization.git
-   cd rag-arxiv-summarization
+   git clone https://github.com/username/SEAD-Agent.git
+   cd SEAD-Agent
    ```
 
 2. **Create and activate virtual environment**
@@ -277,7 +289,7 @@ User: "Find papers on steel frame design and give me recommendations"
 
 ## 🐳 Docker Deployment
 
-### **Docker Compose**
+### **Docker Compose (Recommended)**
 ```bash
 # Build and run with Docker Compose
 docker-compose up --build
@@ -289,6 +301,21 @@ docker-compose up -d
 docker-compose down
 ```
 
+### **Individual Docker Containers**
+```bash
+# Build and run backend
+cd chatbot-server
+docker build -t sead-backend .
+docker run -p 8000:8000 --env-file .env sead-backend
+
+# Build and run frontend
+cd ../chatbot-app
+docker build -t sead-frontend .
+docker run -p 3000:3000 sead-frontend
+```
+
+For detailed Docker setup instructions, see [README-docker.md](README-docker.md).
+
 ## 📋 API Endpoints
 
 The FastAPI backend provides the following key endpoints:
@@ -298,17 +325,35 @@ The FastAPI backend provides the following key endpoints:
   - **Form Fields:**
     - `message` (required): User query string
     - `document` (optional): PDF file upload for summarization/Q&A
-  - **Response:** JSON with chatbot response using function calling
+  - **Response:** JSON with structured chatbot response including:
+    - `initial_response`: Brief intent statement
+    - `sources`: Array of research sources
+    - `final_response`: Comprehensive analysis
+    - `tool_calls`: List of executed functions
 
-### **Run Specific Test Categories:**
-```bash
-# Run backend tests
-cd chatbot-server
-python -m pytest tests/
-
-# Run frontend tests
-cd chatbot-app
-npm test
+### **Response Format:**
+```json
+{
+  "initial_response": "I'll research and analyze your query about structural design...",
+  "sources": [
+    {
+      "id": "arxiv_1",
+      "title": "Recent Advances in Seismic Design...",
+      "url": "https://arxiv.org/abs/...",
+      "type": "ARXIV PAPER",
+      "authors": "Smith, J. et al.",
+      "published": "2024-01-15"
+    }
+  ],
+  "final_response": "Based on the research conducted, here are the key findings...",
+  "tool_calls": [
+    {
+      "function_name": "search_arxiv",
+      "display_name": "ArXiv Search",
+      "description": "Searching for 10 research papers about: seismic design"
+    }
+  ]
+}
 ```
 
 ## 🔧 Configuration
@@ -323,11 +368,22 @@ EMBEDDING: "sentence-transformers/all-MiniLM-L6-v2"
 ```env
 # Required
 MISTRAL_API_KEY=your_mistral_api_key_here
+
+# Optional (for development)
+LOG_LEVEL=INFO
+MAX_FILE_SIZE=10485760  # 10MB
 ```
+
+### **Function Calling Configuration**
+The system automatically configures function calling with the following priorities:
+1. **Document Search**: Primary function for uploaded documents
+2. **ArXiv Search**: Fallback when document search insufficient
+3. **Design Recommendations**: For specific design queries
+4. **Document Summarization**: For PDF analysis requests
 
 ## 📄 License
 
-This project is licensed under the **MIT License** - see the LICENSE file for details.
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
 ## 🔮 Future Enhancements
 
@@ -338,9 +394,10 @@ This project is licensed under the **MIT License** - see the LICENSE file for de
 - **Real-time Collaboration**: Multi-user document analysis and collaborative recommendations
 - **Enhanced Visualization**: Interactive charts, graphs, and technical diagrams
 - **Offline Capabilities**: Local model deployment for secure environments
+- **Advanced Caching**: Redis-based caching for improved response times
 
 ### **Performance Improvements:**
 - **Async Processing**: Background job processing for large documents
-- **Caching Layer**: Redis-based caching for improved response times
 - **Database Optimization**: Advanced indexing and query optimization
 - **Model Optimization**: Fine-tuned models for specific engineering domains
+- **Response Streaming**: Real-time response generation for better user experience
