@@ -267,7 +267,7 @@ class FunctionCallingService:
             logger.error(f"Design recommendation error: {e}")
             return json.dumps({"error": str(e), "recommendations": [], "query": design_query})
 
-    def _summarize_document_function(self, pdf_document: str, file_name: str = "document.pdf", summary_type: str = "brief", max_chunks: int = 5) -> str:
+    def _summarize_document_function(self, pdf_document: str, file_name: str, summary_type: str = "brief", max_chunks: int = 5) -> str:
         """
         Summarize a PDF document from base64-encoded bytes using the document summarization service
         """
@@ -310,6 +310,9 @@ class FunctionCallingService:
                     logger.error(f"Alternative base64 decoding also failed: {e2}")
                     return json.dumps({"error": "Invalid base64-encoded PDF document", "summary": "", "file_name": file_name})
 
+            # Extract text content from PDF for vector store
+            text_content = self.document_summarization_service.extract_text_from_pdf_bytes(pdf_bytes)
+
             summary_result = self.document_summarization_service.summarize_document_from_bytes(
                 pdf_bytes=pdf_bytes,
                 file_name=file_name,
@@ -317,11 +320,20 @@ class FunctionCallingService:
                 max_chunks=max_chunks
             )
 
+            # Create vector store with the extracted text content
+            if self.vector_service and text_content.strip():
+                try:
+                    self.vector_service.create_vector_store(file_name, text_content)
+                    logger.info(f"Successfully created vector store for file: {file_name}")
+                except Exception as e:
+                    logger.error(f"Error creating vector store for file {file_name}: {e}")
+
             result_data = {
                 "summary": self._make_serializable(summary_result),
                 "file_name": file_name,
                 "summary_type": summary_type,
-                "max_chunks": max_chunks
+                "max_chunks": max_chunks,
+                "vector_store_created": self.vector_service is not None and bool(text_content.strip())
             }
 
             return json.dumps(result_data)
