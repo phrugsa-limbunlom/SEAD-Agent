@@ -22,6 +22,8 @@ COPY . .
 
 # Set environment variables
 ENV PYTHONPATH=/app
+ENV ANONYMIZED_TELEMETRY=False
+ENV CHROMA_TELEMETRY_ENABLED=False
 
 # Expose port 8000 for the FastAPI server
 EXPOSE 8000
