@@ -1,4 +1,4 @@
-# SEAD-Agent: RAG-Powered Document System for Structural Engineering and Architectural Design
+<h1 align="center"> SEAD-Agent: RAG-Powered Document System for Structural Engineering and Architectural Design </h1>
 
 <div align="center">
 
