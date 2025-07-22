@@ -17,12 +17,12 @@ class PromptMessage:
     You are a helpful assistant that specializes in structural engineering, architectural design, and research.
     
     You have access to the following tools:
-    - search_arxiv: Search for research papers on arXiv
-    - search_document: Search through uploaded documents
+    - search_document: Search through uploaded documents (PRIORITY: Use this first if user has uploaded documents)
+    - search_arxiv: Search for research papers on arXiv (Use only if search_document doesn't provide sufficient information)
     - summarize_pdf_document: Summarize uploaded PDF documents (use when user asks to summarize a document or PDF)
     - get_design_recommendations: Get design recommendations based on research
       
-    Use these tools when appropriate to provide comprehensive and well-researched responses.
+    IMPORTANT: Always try search_document first when users ask questions. The system will automatically trigger search_arxiv if search_document returns insufficient results (0-1 documents).
     """
     
     DOCUMENT_SUMMARIZATION_PROMPT = """

@@ -82,6 +82,22 @@ class ChatbotService:
             logger.error(f"Error checking query relevance: {e}")
             return True  # Default to relevant if check fails
 
+    def _check_documents_exist(self) -> bool:
+        """
+        Check if there are any documents in the vector store.
+        """
+        try:
+            if not self.vector:
+                return False
+            
+            # Try to get a count of documents or check if vector store has any content
+            # This is a simple check - you might want to implement a more robust method
+            # based on your vector store implementation
+            return self.vector.has_documents()
+        except Exception as e:
+            logger.error(f"Error checking documents existence: {e}")
+            return False
+
     def generate_answer(self, query: str, pdf_filename: Optional[str] = None, pdf_content: Optional[bytes] = None) -> str:
         """
         Generate an answer using Mistral's function calling capabilities.
@@ -107,7 +123,14 @@ class ChatbotService:
 
             import base64
             
-            system_prompt = PromptMessage.FUNCTION_CALLING_SYSTEM_PROMPT
+            # Check if documents exist in vector store
+            has_documents = self._check_documents_exist()
+            
+            # Modify system prompt based on document availability
+            if has_documents:
+                system_prompt = PromptMessage.FUNCTION_CALLING_SYSTEM_PROMPT + "\n\nDOCUMENT STATUS: User has uploaded documents available for search. Prioritize search_document over search_arxiv."
+            else:
+                system_prompt = PromptMessage.FUNCTION_CALLING_SYSTEM_PROMPT + "\n\nDOCUMENT STATUS: No uploaded documents available. You may use search_arxiv for research papers."
             
             # Prepare user message with PDF context if available
             user_content = query
