@@ -1,10 +1,9 @@
-import arxiv
-import requests
 import logging
-from typing import List, Dict, Optional
-from datetime import datetime, timedelta
-import json
 import os
+from datetime import datetime
+from typing import List, Dict, Optional
+
+import arxiv
 import pymupdf
 
 logger = logging.getLogger(__name__)

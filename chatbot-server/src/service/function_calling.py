@@ -3,11 +3,11 @@ import logging
 import base64
 from typing import Optional, Any, List, Dict
 from datetime import datetime
-from service.VectorStoreService import VectorStoreService
-from service.ArxivService import ArxivService
-from service.DesignRecommendationService import DesignRecommendationService
-from service.DocumentSummarizationService import DocumentSummarizationService
-from constants.PromptMessage import PromptMessage
+from service.vector_store import VectorStoreService
+from service.arxiv_service import ArxivService
+from service.design_recom import DesignRecommendationService
+from service.docsum import DocumentSummarizationService
+from constants.prompt_message import PromptMessage
 
 logging.basicConfig(
     level=logging.INFO,

@@ -11,9 +11,9 @@ from fastapi.responses import FileResponse
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from service.ChatbotService import ChatbotService
-from data.ChatMessage import ChatMessage
-from data.ChatbotResponse import ChatbotResponse
+from service.chatbot_service import ChatbotService
+from data.chat_message import ChatMessage
+from data.chatbot_response import ChatbotResponse
 
 # configure logging
 logging.basicConfig(

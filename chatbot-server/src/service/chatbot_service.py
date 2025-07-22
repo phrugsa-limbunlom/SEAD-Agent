@@ -4,15 +4,15 @@ import os
 from typing import Optional, Any, List, Dict
 
 import pymupdf
-from constants.PromptMessage import PromptMessage
+from constants.prompt_message import PromptMessage
 from dotenv import load_dotenv, find_dotenv
 from langchain_core.prompts import ChatPromptTemplate
 from mistralai import Mistral
-from service.ArxivService import ArxivService
-from service.DesignRecommendationService import DesignRecommendationService
-from service.DocumentSummarizationService import DocumentSummarizationService
-from service.FunctionCallingService import FunctionCallingService
-from service.VectorStoreService import VectorStoreService
+from service.arxiv_service import ArxivService
+from service.design_recom import DesignRecommendationService
+from service.docsum import DocumentSummarizationService
+from service.function_calling import FunctionCallingService
+from service.vector_store import VectorStoreService
 from utils.file_utils import FileUtils
 
 logging.basicConfig(

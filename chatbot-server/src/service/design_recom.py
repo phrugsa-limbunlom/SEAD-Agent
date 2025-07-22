@@ -3,9 +3,9 @@ import logging
 from typing import List, Dict, Optional
 from datetime import datetime
 
-from service.ArxivService import ArxivService
-from service.VectorStoreService import VectorStoreService
-from data.DocumentMetadata import ResearchPaperMetadata, DesignRecommendation
+from service.arxiv_service import ArxivService
+from service.vector_store import VectorStoreService
+from data.doc_data import ResearchPaperMetadata, DesignRecommendation
 
 logger = logging.getLogger(__name__)
 

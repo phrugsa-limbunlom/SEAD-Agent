@@ -6,7 +6,7 @@ from typing import List, Dict, Optional, Any, Tuple
 import fitz  # PyMuPDF
 from PIL import Image
 from utils.image_utils import ImageUtils
-from PromptMessage import PromptMessage
+from constants.prompt_message import PromptMessage
 
 logger = logging.getLogger(__name__)
 
@@ -181,21 +181,9 @@ class DocumentSummarizationService:
             raise ValueError("VLM client not initialized")
 
         if summary_type == "brief":
-            prompt = f"""Please provide a concise summary of the following text, focusing on the key points and main ideas:
-
-            {chunk}
-            
-            Summary:"""
+            prompt = PromptMessage.BRIEF_DOCUMENT_SUMMARIZATION
         else:  # detailed
-            prompt = f"""Please provide a comprehensive summary of the following text, including:
-            - Main topics and themes
-            - Key findings or conclusions
-            - Important details and supporting information
-            - Any technical terms or concepts mentioned
-            
-            {chunk}
-            
-            Detailed Summary:"""
+            prompt = PromptMessage.DETAILED_DOCUMENT_SUMMARIZATION
 
         try:
             response = self.vlm_client.chat(
@@ -245,7 +233,7 @@ class DocumentSummarizationService:
         if summary_type == "brief":
             prompt = PromptMessage.BRIEF_DOCUMENT_SUMMARIZATION
         else:  # detailed
-            PromptMessage.DETAILED_DOCUMENT_SUMMARIZATION
+            prompt = PromptMessage.DETAILED_DOCUMENT_SUMMARIZATION
 
         try:
             messages = [
