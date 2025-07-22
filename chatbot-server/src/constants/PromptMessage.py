@@ -140,3 +140,21 @@ class PromptMessage:
 
     Your response should be informative, actionable, and directly address the user's query.
     """
+
+    BRIEF_DOCUMENT_SUMMARIZATION =  """
+    Please provide a concise summary of the following content, including both text and visual elements. Focus on:
+    - Key points and main ideas from the text
+    - Important information from any images, charts, or diagrams
+    - Overall message or findings
+                
+    Content:"""
+
+    DETAILED_DOCUMENT_SUMMARIZATION = prompt = """Please provide a comprehensive summary of the following content, including:
+    - Main topics and themes from the text
+    - Key findings or conclusions
+    - Important details and supporting information
+    - Analysis of any images, charts, diagrams, or visual elements
+    - Technical terms or concepts mentioned
+    - Relationships between text and visual content
+                
+    Content:"""

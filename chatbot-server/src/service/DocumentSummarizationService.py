@@ -6,6 +6,7 @@ from typing import List, Dict, Optional, Any, Tuple
 import fitz  # PyMuPDF
 from PIL import Image
 from utils.image_utils import ImageUtils
+from PromptMessage import PromptMessage
 
 logger = logging.getLogger(__name__)
 
@@ -207,7 +208,7 @@ class DocumentSummarizationService:
             return f"Error summarizing this section: {str(e)}"
 
     def summarize_chunk_with_images(self, text_chunk: str, images: List[Dict], summary_type: str = "brief") -> str:
-        """
+        """summarize_document_from_bytes
         Summarize a text chunk with associated images using VLM.
         
         Args:
@@ -242,22 +243,9 @@ class DocumentSummarizationService:
             })
 
         if summary_type == "brief":
-            prompt = """Please provide a concise summary of the following content, including both text and visual elements. Focus on:
-                - Key points and main ideas from the text
-                - Important information from any images, charts, or diagrams
-                - Overall message or findings
-                
-                Content:"""
+            prompt = PromptMessage.BRIEF_DOCUMENT_SUMMARIZATION
         else:  # detailed
-            prompt = """Please provide a comprehensive summary of the following content, including:
-                - Main topics and themes from the text
-                - Key findings or conclusions
-                - Important details and supporting information
-                - Analysis of any images, charts, diagrams, or visual elements
-                - Technical terms or concepts mentioned
-                - Relationships between text and visual content
-                
-                Content:"""
+            PromptMessage.DETAILED_DOCUMENT_SUMMARIZATION
 
         try:
             messages = [
