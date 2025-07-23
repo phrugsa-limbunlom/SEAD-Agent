@@ -36,10 +36,16 @@ A comprehensive RAG-powered document system that combines a Python FastAPI backe
 ## 🎬 Demo
 
 ### Search Papers from ArXiv
-https://github.com/user-attachments/assets/fc84010e-d598-4fb7-9522-45cc08643f0f
+
+https://github.com/user-attachments/assets/207ec228-1efc-46d2-8665-bfa9af6f5117
+
+### Search from Knowledge Base (Vector Store)
+
+https://github.com/user-attachments/assets/95fa08a4-31b4-4dc2-8360-276510c9a08f
 
 ### Summarize Documents
-https://github.com/user-attachments/assets/b15d9322-eeee-4f41-ad8e-e69925cae50d
+
+https://github.com/user-attachments/assets/81383e62-828e-4136-a2e3-520107870d59
 
 ### Recommend Design
 https://github.com/user-attachments/assets/c58d35f6-d1bb-48e8-a83e-7267829f4846
