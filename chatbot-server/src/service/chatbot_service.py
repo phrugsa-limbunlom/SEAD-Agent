@@ -41,7 +41,7 @@ class ChatbotService:
         self.template = template
         self.client = client
         self.vlm_model = vlm_model or "pixtral-12b-2409"
-        self.embedding_model = embedding_model or "mistral-embed"
+        self.embedding_model = embedding_model
         self.vector = vector
         
         # Add new services
@@ -49,6 +49,7 @@ class ChatbotService:
         self.design_recommendation_service = None 
         self.document_summarization_service = None
         self.function_calling_service = None
+        self.vector_store = VectorStoreService(self.embedding_model)
 
     def get_function_definitions(self) -> List[Dict]:
         """
@@ -106,8 +107,10 @@ class ChatbotService:
                     return json.dumps({"message": PromptMessage.DEFAULT_MESSAGE})
 
             import base64
-            
-            system_prompt = PromptMessage.FUNCTION_CALLING_SYSTEM_PROMPT
+
+            has_document =  self.vector_store.has_documents()
+
+            system_prompt = PromptMessage.FUNCTION_CALLING_SYSTEM_PROMPT.format(HAS_DOCUMENT=has_document)
             
             # Prepare user message with PDF context if available
             user_content = query
@@ -196,7 +199,7 @@ class ChatbotService:
             vlm_client=self.client,
             vlm_model=self.vlm_model
         )
-        
+
         logger.info(f"Enhanced chatbot service initialized with Mistral AI function calling and VLM model: {self.vlm_model}")
     
 
