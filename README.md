@@ -17,6 +17,22 @@
 
 A comprehensive RAG-powered document system that combines a Python FastAPI backend with a React frontend to provide intelligent analysis of research papers from structural engineering and architectural design domains. Built with **Mistral AI's Vision Language Model (VLM) and function calling capabilities**, the system automatically determines the most appropriate tools and actions based on user queries, enabling seamless document processing, research discovery, and evidence-based design recommendations.
 
+## 🔧 Core Technology
+
+✅ **Mistral AI VLM**: Advanced Vision Language Model for multi-modal document processing  
+✅ **Function Calling**: Intelligent tool selection and orchestration using Mistral's function calling capabilities  
+✅ **Vector Database**: semantic search and document retrieval
+✅ **FastAPI Backend**: High-performance Python API with async support  
+✅ **React Frontend**: Modern, responsive web interface support muti-modal input types with real-time chat  
+
+### Technology Stack
+- **AI/ML**: Mistral AI VLM (pixtral-12b-2409) with function calling
+- **Vector Search**: ChromaDB with HuggingFace embeddings (all-MiniLM-L6-v2)
+- **Backend**: FastAPI + Uvicorn with PyMuPDF for document processing
+- **Frontend**: React 18.2.0 with modern CSS and responsive design
+- **Research**: ArXiv API integration for academic paper discovery
+- **Containerization**: Docker Compose for seamless deployment
+
 ## 🎬 Demo
 
 ### Search Papers from ArXiv
@@ -77,18 +93,25 @@ SEAD-Agent/
 │   │   └── utils/                 # Utility functions
 │   │       ├── file_utils.py      # File operation utilities
 │   │       └── image_utils.py     # Image processing utilities
+│   ├── chroma/                    # Vector database storage
 │   ├── requirements.txt           # Python dependencies
-│   └── model.yaml                 # Model configuration
+│   ├── model.yaml                 # Model configuration
+│   ├── Dockerfile                 # Backend container configuration
+│   └── .gitignore                 # Backend git ignore rules
 ├── chatbot-app/                   # React Frontend
 │   ├── src/
 │   │   ├── App.js                # Main React application
 │   │   ├── App.css               # Application styles
 │   │   └── ...                   # Other React components
-│   └── package.json              # Frontend dependencies
+│   ├── public/                   # Static assets
+│   ├── package.json              # Frontend dependencies
+│   ├── Dockerfile                # Frontend container configuration
+│   └── .gitignore                # Frontend git ignore rules
 ├── docker-compose.yaml           # Docker Compose configuration
-├── Dockerfile                    # Container configuration
+├── Dockerfile                    # Root container configuration
 ├── README-docker.md             # Docker-specific documentation
-└── LICENSE                      # MIT License
+├── LICENSE                      # MIT License
+└── .gitignore                   # Root git ignore rules
 ```
 
 ## 🛠️ Services Architecture
@@ -227,7 +250,36 @@ User: "What are the latest developments in concrete technology?"
 - **Python 3.8+**
 - **Node.js 16+**
 - **Git**
-- **Mistral AI API Key** (required)
+- **Mistral AI API Key** (required) - Get your API key from [Mistral AI Platform](https://console.mistral.ai/)
+
+### Quick Start
+```bash
+# Clone the repository
+git clone https://github.com/username/SEAD-Agent.git
+cd SEAD-Agent
+
+# Set up backend
+cd chatbot-server
+python -m venv venv
+# On Windows:
+venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Set up frontend
+cd ../chatbot-app
+npm install
+
+# Start both services
+# Terminal 1 (Backend):
+cd ../chatbot-server
+uvicorn src.main:app --host 0.0.0.0 --port 8000
+
+# Terminal 2 (Frontend):
+cd ../chatbot-app
+npm start
+```
 
 ### Backend Setup
 1. **Clone the repository**
