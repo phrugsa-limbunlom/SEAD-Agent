@@ -21,10 +21,14 @@ A comprehensive RAG-powered document system that combines a Python FastAPI backe
 
 ## 🔧 Core Technology
 
-✅ **Mistral AI VLM**: Advanced Vision Language Model for multi-modal document processing  
-✅ **Function Calling**: Intelligent tool selection and orchestration using Mistral's function calling capabilities  
+✅ **Mistral AI VLM**: Advanced Vision Language Model for multi-modal document processing 
+
+✅ **Function Calling**: Intelligent tool selection and orchestration using Mistral's function calling capabilities 
+
 ✅ **Vector Database**: semantic search and document retrieval
-✅ **FastAPI Backend**: High-performance Python API with async support  
+
+✅ **FastAPI Backend**: High-performance Python API with async support 
+
 ✅ **React Frontend**: Modern, responsive web interface support muti-modal input types with real-time chat  
 
 ### Technology Stack
