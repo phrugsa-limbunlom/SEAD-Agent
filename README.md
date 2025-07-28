@@ -40,7 +40,7 @@ https://github.com/user-attachments/assets/c58d35f6-d1bb-48e8-a83e-7267829f4846
 - [Core Technology](#-core-technology)
 - [Key Features](#-key-features)
 - [Project Structure](#-project-structure)
-- [Services Architecture](#services-architecture)
+- [Services Architecture](#%EF%B8%8F-services-architecture)
 - [Data Models](#-data-models)
 - [Usage Examples](#-usage-examples)
 - [System Requirements](#-system-requirements)
