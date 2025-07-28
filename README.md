@@ -19,6 +19,38 @@ A comprehensive RAG-powered document system that combines a Python FastAPI backe
 
 📚 Explore the comprehensive implementation of automated tool calling in **SEAD-Agent** through this detailed guide: [A Simple Method For Building Auto-Tool-Calling Agents Without Third-Party Libraries](https://phrugsa-limbunlom.medium.com/a-straightforward-method-for-creating-auto-tool-calling-agents-bcbef40bf505).
 
+## 🎬 Demo
+
+### Search Papers from ArXiv
+
+https://github.com/user-attachments/assets/207ec228-1efc-46d2-8665-bfa9af6f5117
+
+### Search from Knowledge Base (Vector Store)
+
+https://github.com/user-attachments/assets/95fa08a4-31b4-4dc2-8360-276510c9a08f
+
+### Summarize Documents
+
+https://github.com/user-attachments/assets/81383e62-828e-4136-a2e3-520107870d59
+
+### Recommend Design
+https://github.com/user-attachments/assets/c58d35f6-d1bb-48e8-a83e-7267829f4846
+
+## 📋 Table of Contents
+- [Core Technology](#-core-technology)
+- [Key Features](#-key-features)
+- [Project Structure](#-project-structure)
+- [Services Architecture](#services-architecture)
+- [Data Models](#-data-models)
+- [Usage Examples](#-usage-examples)
+- [System Requirements](#-system-requirements)
+- [Installation and Setup](#-installation-and-setup)
+- [Docker Deployment](#-docker-deployment)
+- [API Endpoints](#-api-endpoints)
+- [Configuration](#-configuration)
+- [License](#-license)
+- [Future Enhancements](#-future-enhancements)
+
 ## 🔧 Core Technology
 
 ✅ **Mistral AI VLM**: Advanced Vision Language Model for multi-modal document processing 
@@ -38,38 +70,6 @@ A comprehensive RAG-powered document system that combines a Python FastAPI backe
 - **Frontend**: React 18.2.0 with modern CSS and responsive design
 - **Research**: ArXiv API integration for academic paper discovery
 - **Containerization**: Docker Compose for seamless deployment
-
-## 🎬 Demo
-
-### Search Papers from ArXiv
-
-https://github.com/user-attachments/assets/207ec228-1efc-46d2-8665-bfa9af6f5117
-
-### Search from Knowledge Base (Vector Store)
-
-https://github.com/user-attachments/assets/95fa08a4-31b4-4dc2-8360-276510c9a08f
-
-### Summarize Documents
-
-https://github.com/user-attachments/assets/81383e62-828e-4136-a2e3-520107870d59
-
-### Recommend Design
-https://github.com/user-attachments/assets/c58d35f6-d1bb-48e8-a83e-7267829f4846
-
-## 📋 Table of Contents
-
-- [Key Features](#-key-features)
-- [Project Structure](#-project-structure)
-- [Services Architecture](#-services-architecture)
-- [Data Models](#-data-models)
-- [Usage Examples](#-usage-examples)
-- [System Requirements](#-system-requirements)
-- [Installation and Setup](#-installation-and-setup)
-- [Docker Deployment](#-docker-deployment)
-- [API Endpoints](#-api-endpoints)
-- [Configuration](#-configuration)
-- [License](#-license)
-- [Future Enhancements](#-future-enhancements)
 
 ## 🚀 Key Features
 
