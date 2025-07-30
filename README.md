@@ -17,7 +17,7 @@
 
 A comprehensive RAG-powered document system that combines a Python FastAPI backend with a React frontend to provide intelligent analysis of research papers from structural engineering and architectural design domains. Built with **Mistral AI's Vision Language Model (VLM) and function calling capabilities**, the system automatically determines the most appropriate tools and actions based on user queries, enabling seamless document processing, research discovery, and evidence-based design recommendations.
 
-📚 Explore the comprehensive implementation of automated tool calling in **SEAD-Agent** through this detailed guide: [A Simple Method For Building Auto-Tool-Calling Agents Without Third-Party Libraries](https://phrugsa-limbunlom.medium.com/a-straightforward-method-for-creating-auto-tool-calling-agents-bcbef40bf505).
+📚 Explore the comprehensive implementation of automated tool calling in **SEAD-Agent** through this detailed guide: [A Simple Method For Building Auto-Tool-Calling Agents Without Frameworks](https://phrugsa-limbunlom.medium.com/a-straightforward-method-for-creating-auto-tool-calling-agents-bcbef40bf505).
 
 ## 🎬 Demo
 
