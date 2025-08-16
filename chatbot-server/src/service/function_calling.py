@@ -1,6 +1,7 @@
 import json
 import logging
 import base64
+import tempfile
 from typing import Optional, Any, List, Dict, Tuple
 from datetime import datetime
 from service.vector_store import VectorStoreService
@@ -8,6 +9,7 @@ from service.arxiv_service import ArxivService
 from service.design_recom import DesignRecommendationService
 from service.docsum import DocumentSummarizationService
 from constants.prompt_message import PromptMessage
+import os
 
 logging.basicConfig(
     level=logging.INFO,
@@ -221,23 +223,11 @@ class FunctionCallingService:
         Search uploaded documents using vector store
         """
         try:
-            if not self.vector_service:
-                return json.dumps({"error": "Vector service not initialized"})
-
-            vector_retriever = self.vector_service.load_vector_store()
-            docs = vector_retriever.invoke(query)
-
-            document_results = []
-            for doc in docs:
-                document_results.append({
-                    "content": doc.page_content,
-                    "source": doc.metadata.get("source", "Unknown"),
-                    "relevance_score": doc.metadata.get("score", 0.0)
-                })
+            result = self.vector_service.get_document(query)
 
             result_data = {
-                "documents": self._make_serializable(document_results),
-                "count": len(document_results),
+                "documents": self._make_serializable(result['documents'][0][0]),
+                "count": len(result),
                 "query": query
             }
 
@@ -267,73 +257,21 @@ class FunctionCallingService:
             logger.error(f"Design recommendation error: {e}")
             return json.dumps({"error": str(e), "recommendations": [], "query": design_query})
 
-    def _summarize_document_function(self, pdf_document: str, file_name: str, summary_type: str = "brief", max_chunks: int = 5) -> str:
+    def _summarize_document_function(self, pdf_document, file_name, summary_type, max_chunks) -> str:
         """
-        Summarize a PDF document from base64-encoded bytes using the document summarization service
+        Summarize a PDF document  using the document summarization service
         """
         try:
-            if not self.document_summarization_service:
-                return json.dumps({"error": "Document summarization service not initialized"})
-
-            # Validate max_chunks
-            if max_chunks > 10:
-                max_chunks = 10
-            elif max_chunks < 1:
-                max_chunks = 1
-
-            # Decode base64 PDF document with proper padding
-            try:
-                # Clean the base64 string and remove data URL prefix if present
-                pdf_document = pdf_document.strip()
-                logger.info(f"Base64 string length: {len(pdf_document)}, first 50 chars: {pdf_document[:50]}...")
-                
-                # Remove data URL prefix if present (e.g., "data:application/pdf;base64,")
-                if pdf_document.startswith("data:"):
-                    # Extract the base64 part after the comma
-                    pdf_document = pdf_document.split(",", 1)[1]
-                    logger.info(f"Removed data URL prefix, new length: {len(pdf_document)}")
-                
-                # Add padding if needed
-                padding_needed = len(pdf_document) % 4
-                if padding_needed:
-                    pdf_document += '=' * (4 - padding_needed)
-                
-                # Try to decode
-                pdf_bytes = base64.b64decode(pdf_document)
-            except Exception as e:
-                logger.error(f"Error decoding base64 PDF document: {e}")
-                # Try alternative decoding methods
-                try:
-                    # Try with urlsafe base64
-                    pdf_bytes = base64.urlsafe_b64decode(pdf_document + '=' * (4 - len(pdf_document) % 4))
-                except Exception as e2:
-                    logger.error(f"Alternative base64 decoding also failed: {e2}")
-                    return json.dumps({"error": "Invalid base64-encoded PDF document", "summary": "", "file_name": file_name})
-
-            # Extract text content from PDF for vector store
-            text_content = self.document_summarization_service.extract_text_from_pdf_bytes(pdf_bytes)
-
-            summary_result = self.document_summarization_service.summarize_document_from_bytes(
-                pdf_bytes=pdf_bytes,
-                file_name=file_name,
+            summary_result = self.document_summarization_service.summarize_document(
+                pdf_content=pdf_document,
                 summary_type=summary_type,
                 max_chunks=max_chunks
             )
-
-            # Create vector store with the extracted text content
-            if self.vector_service and text_content.strip():
-                try:
-                    self.vector_service.create_vector_store(file_name, text_content)
-                    logger.info(f"Successfully created vector store for file: {file_name}")
-                except Exception as e:
-                    logger.error(f"Error creating vector store for file {file_name}: {e}")
-
             result_data = {
                 "summary": self._make_serializable(summary_result),
                 "file_name": file_name,
                 "summary_type": summary_type,
                 "max_chunks": max_chunks,
-                "vector_store_created": self.vector_service is not None and bool(text_content.strip())
             }
 
             return json.dumps(result_data)
@@ -341,114 +279,109 @@ class FunctionCallingService:
             logger.error(f"PDF document summarization error: {e}")
             return json.dumps({"error": str(e), "summary": "", "file_name": file_name})
 
+
     def generate_initial_response(self, query: str) -> str:
         """
         Generate an initial response that shows what the AI is planning to do.
         This follows the pattern of showing analysis intent using LLM.
         """
-        try:
-            if not self.vlm_client:
-                # Fallback to simple response if LLM is not available
-                return f"I'll research and analyze '{query}' to provide you with evidence-based insights and recommendations."
 
-            system_prompt = PromptMessage.INITIAL_RESPONSE_PROMPT
+        system_prompt = PromptMessage.INITIAL_RESPONSE_PROMPT
 
-            messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Generate an initial response for this query: {query}"}
-            ]
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"Generate an initial response for this query: {query}"}
+        ]
 
-            response = self.vlm_client.chat.complete(
-                model=self.vlm_model,
-                messages=messages,
-                temperature=0.3,
-                max_tokens=150
-            )
+        response = self.vlm_client.chat.complete(
+            model=self.vlm_model,
+            messages=messages,
+            temperature=0.3,
+            max_tokens=150
+        )
 
-            return response.choices[0].message.content.strip()
+        return response.choices[0].message.content.strip()
 
-        except Exception as e:
-            logger.error(f"Error generating initial response with LLM: {e}")
-            # Fallback to simple response
-            return f"I'll research and analyze '{query}' to provide you with evidence-based insights and recommendations."
-
-    def _execute_function(self, messages: List[Dict], response: Any, pdf_data: Optional[Dict] = None, tool_calls_made = None) -> Any:
-
+    def _execute_function(self, messages: List[Dict], response: Any, pdf_data: Optional[Dict] = None,
+                          tool_calls_made=None) -> Any:
         # Initialize sources list and tool calls list
         sources = []
         tool_calls_made = [] if tool_calls_made is None else tool_calls_made
 
         for tool_call in response.choices[0].message.tool_calls:
-                function_name = tool_call.function.name
-                function_args = json.loads(tool_call.function.arguments)
+            function_name = tool_call.function.name
+            function_args = json.loads(tool_call.function.arguments)
 
-                logger.info(f"Executing function: {function_name} with args: {function_args}")
+            logger.info(f"Executing function: {function_name} with args: {function_args}")
 
-                # Track the tool call for UI display (filter out base64 data)
-                display_args = function_args.copy()
-                if function_name == "summarize_pdf_document" and "pdf_document" in display_args:
-                    # Replace base64 data with a placeholder for display
-                    display_args["pdf_document"] = "[PDF_DATA]"
+            # Track the tool call for UI display (filter out base64 data)
+            display_args = function_args.copy()
+            if function_name == "summarize_pdf_document" and "pdf_document" in display_args:
+                # Replace base64 data with a placeholder for display
+                display_args["pdf_document"] = "[PDF_DATA]"
 
-                tool_call_info = {
-                    "function_name": function_name,
-                    "function_args": display_args,
-                    "display_name": self._get_tool_display_name(function_name),
-                    "description": self._get_tool_description(function_name, function_args)
-                }
-                tool_calls_made.append(tool_call_info)
+            tool_call_info = {
+                "function_name": function_name,
+                "function_args": display_args,
+                "display_name": self._get_tool_display_name(function_name),
+                "description": self._get_tool_description(function_name, function_args)
+            }
+            tool_calls_made.append(tool_call_info)
 
-                # Handle PDF data injection for summarize_pdf_document function
-                if function_name == "summarize_pdf_document" and pdf_data:
-                    function_args["pdf_document"] = pdf_data["pdf_base64"]
-                    function_args["file_name"] = pdf_data["filename"]
+            # Handle PDF data injection for summarize_pdf_document function
+            if function_name == "summarize_pdf_document" and pdf_data:
+                function_args["pdf_document"] = pdf_data["pdf_content"]
+                function_args["file_name"] = pdf_data["filename"]
 
-                    logger.info(f"Injected PDF data for summarize_pdf_document function: {pdf_data['filename']}")
+                logger.info(f"Injected PDF data for summarize_pdf_document function: {function_args['file_name']}")
 
-                # Execute the function
-                function_result = self.execute_function(function_name, function_args)
+            # Execute the function
+            function_result = self.execute_function(function_name, function_args)
 
-                # Extract sources if this is an ArXiv search
-                if function_name == "search_arxiv":
-                    try:
-                        result_data = json.loads(function_result)
-                        if "papers" in result_data:
-                            for i, paper in enumerate(
-                                    result_data["papers"][:7]):  # Limit to 7 sources
-                                source_item = {
-                                    "id": f"arxiv_{i + 1}",
-                                    "title": paper["title"][:100] + "..." if len(paper["title"]) > 100 else paper[
-                                        "title"],
-                                    "url": paper["pdf_url"],
-                                    "type": "ARXIV PAPER",
-                                    "authors": ", ".join(paper["authors"][:3]) + (
-                                        " et al." if len(paper["authors"]) > 3 else ""),
-                                    "published": paper["published"]
-                                }
-                                sources.append(json.dumps(source_item))
-                    except (json.JSONDecodeError, KeyError) as e:
-                        logger.error(f"Error parsing ArXiv results: {e}")
+            # Extract sources if this is an ArXiv search
+            if function_name == "search_arxiv":
+                try:
+                    result_data = json.loads(function_result)
+                    if "papers" in result_data:
+                        for i, paper in enumerate(
+                                result_data["papers"][:7]):  # Limit to 7 sources
+                            source_item = {
+                                "id": f"arxiv_{i + 1}",
+                                "title": paper["title"][:100] + "..." if len(paper["title"]) > 100 else paper[
+                                    "title"],
+                                "url": paper["pdf_url"],
+                                "type": "ARXIV PAPER",
+                                "authors": ", ".join(paper["authors"][:3]) + (
+                                    " et al." if len(paper["authors"]) > 3 else ""),
+                                "published": paper["published"]
+                            }
+                            sources.append(json.dumps(source_item))
+                except (json.JSONDecodeError, KeyError) as e:
+                    logger.error(f"Error parsing ArXiv results: {e}")
 
-                # Add function result to messages
-                messages.append({
-                    "role": "tool",
-                    "name": function_name,
-                    "content": function_result,
-                    "tool_call_id": tool_call.id
-                })
+            # Add function result to messages
+            messages.append({
+                "role": "tool",
+                "name": function_name,
+                "content": function_result,
+                "tool_call_id": tool_call.id
+            })
 
-                return sources, tool_calls_made, messages
+            return sources, tool_calls_made, messages
 
     def process_function_calls(self, messages: List[Dict], response: Any, pdf_data: Optional[Dict] = None) -> Dict:
         """
         Process function calls from model response and generate structured response.
         Returns structured response with initial_response, sources, and final_response.
-        
+
         Args:
             messages: List of conversation messages
             response: VLM response with potential function calls
-            pdf_data: Optional PDF data containing base64 encoded PDF and filename
+            pdf_data: Optional PDF data containing raw PDF content and filename
         """
+
+        final_response = ""
+
         # Extract the original query from messages
         original_query = ""
         try:
@@ -477,8 +410,8 @@ class FunctionCallingService:
                     max_tokens=1024
                 )
 
-                if hasattr(response.choices[0].message, 'tool_calls') and response.choices[0].message.tool_calls is not None:
-
+                if hasattr(response.choices[0].message, 'tool_calls') and response.choices[
+                    0].message.tool_calls is not None:
                     # call search_arxiv if search_document failed
 
                     print("No relevant document found.")
@@ -488,12 +421,13 @@ class FunctionCallingService:
 
                     print("List of messages after final response from Assistant: ", messages)
 
-                    sources, tool_calls_made, messages = self._execute_function(messages, response, pdf_data, tool_calls_made)
+                    sources, tool_calls_made, messages = self._execute_function(messages, response, pdf_data,
+                                                                                tool_calls_made)
 
                 # Add system prompt to messages for final response
                 final_messages = [{"role": "system", "content": PromptMessage.FINAL_SYSTEM_PROMPT}] + messages
 
-                print("final_messages" ,final_messages)
+                print("final_messages", final_messages)
 
                 # Generate final answer with function results
                 try:
@@ -587,4 +521,4 @@ class FunctionCallingService:
 
         except Exception as e:
             logger.error(f"Error in Mistral API call: {e}")
-            raise 
+            raise

@@ -52,6 +52,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception as e:
         logger.error(f"Error during initialization: {e}")
         raise
+    finally:
+        # Cleanup when application shuts down
+        try:
+            if hasattr(app.state, 'service') and app.state.service:
+                if hasattr(app.state.service, 'vector') and app.state.service.vector:
+                    app.state.service.vector.close()
+                    logger.info("Vector store service closed successfully")
+                logger.info("Chatbot service cleanup completed")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
 
 app = FastAPI(lifespan=lifespan)
 

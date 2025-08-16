@@ -35,9 +35,7 @@ class PromptMessage:
     Please provide a comprehensive summary of the following document:
     
     {text}
-    
-    User's specific request: {query}
-    
+       
     Please include:
     1. Main objectives and research questions
     2. Key findings and conclusions

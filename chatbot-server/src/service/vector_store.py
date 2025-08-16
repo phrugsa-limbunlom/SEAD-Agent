@@ -1,10 +1,12 @@
 import logging
-import os
+from typing import Optional, List
 
-from langchain_chroma import Chroma
-from langchain_huggingface import HuggingFaceEmbeddings
 import chromadb
-from chromadb.config import Settings
+from chromadb import Settings
+from chromadb.utils import embedding_functions
+from sentence_transformers import SentenceTransformer
+
+from data.doc_data import DocumentChunk
 
 logging.basicConfig(
     level=logging.INFO,
@@ -21,7 +23,7 @@ class VectorStoreService:
     for similarity-based retrieval.
     """
 
-    def __init__(self, embedding_model:str):
+    def __init__(self, embedding_model:str, persistent_directory : Optional[str] = None, collection_name : Optional[str] = None):
         """
         Initialize the VectorStoreService with an embedding model name.
 
@@ -29,64 +31,89 @@ class VectorStoreService:
             embedding_model (str): The name of the HuggingFace embedding model used for encoding text.
         """
         self.embedding_model = embedding_model or "sentence-transformers/all-MiniLM-L6-v2"
-        self.persistent_directory = "./chroma"
-        self.collection = "papers"
-        self.embeddings = HuggingFaceEmbeddings(model_name=self.embedding_model)
+        self.persistent_directory = persistent_directory or "./chroma"
+        self.collection_name = collection_name or "papers"
 
-    def create_vector_store(self, file_name: str, text: str) -> None:
-        """
-        Create or update a vector store with the provided file name and string content.
+      
+        # Initialize the embedding model locally instead of in ChromaDB 
+        
+        self.embedder = SentenceTransformer(self.embedding_model)
+        logger.info(f"Loaded embedding model: {self.embedding_model}")
+       
+        self._create_vector_store()
 
-        This method chunks the text into segments, encodes them using the HuggingFace embeddings,
-        and stores them (along with the embeddings) in a Chroma database.
+    def _create_vector_store(self):
 
-        Args:
-            file_name (str): The name of the file or unique identifier for the content.
-            text (str): The raw text to be chunked, embedded, and stored.
-        """
-
-        # create client with telemetry disabled
-        client = chromadb.Client(Settings(
-            persist_directory=self.persistent_directory, 
-            anonymized_telemetry=False,
-            is_persistent=True
-        ))
-        collection = client.get_or_create_collection(self.collection)
-
-        # Chunk text and add to vector DB (embeddings handled automatically)
-        chunks = [text[i:i + 500] for i in range(0, len(text), 500)]
-        ids = [f"{file_name}_{i}" for i in range(len(chunks))]
-        collection.add(documents=chunks, ids=ids)
-
-
-    def load_vector_store(self):
-        """
-        Load the existing vector store and prepare a retriever for similarity-based lookups.
-
-        Returns:
-            Chroma: An instance of the Chroma retriever in similarity mode, ready to handle queries.
-        """
-        # create client with telemetry disabled
-        client = chromadb.Client(Settings(
-            persist_directory=self.persistent_directory, 
-            anonymized_telemetry=False,
-            is_persistent=True
-        ))
-        collection = client.get_or_create_collection(self.collection)
-
-        vector_store = Chroma(
-            collection_name=self.collection,
-            embedding_function=self.embeddings,
-            client=client,
-            persist_directory=self.persistent_directory,
+        # Initialize ChromaDB client
+        self.client = chromadb.PersistentClient(
+            path=self.persistent_directory,
+            settings=Settings(
+                anonymized_telemetry=False,
+                allow_reset=True,
+                is_persistent=True
+            )
         )
 
-        vector_retriever = vector_store.as_retriever(
-                search_type="similarity_score_threshold",
-                search_kwargs={"k": 3, "score_threshold": 0.5}
+        # Create or get collection
+        try:
+            self.collection = self.client.get_collection(name=self.collection_name)
+            logger.info(f"Loaded existing collection '{self.collection_name}'")
+        except Exception as e:
+            # Create collection with a custom embedding function that uses our local model
+            self.collection = self.client.create_collection(
+                name=self.collection_name,
+                embedding_function=self._custom_embedding_function,
+                metadata={"description": "PDF document chunks with text and image content"},
+            )
+            logger.info(f"Created new collection '{self.collection_name}'")
+
+    def _custom_embedding_function(self, texts):
+        """Custom embedding function to use local downloaded SentenceTransformer model"""
+        
+        embeddings = self.embedder.encode(texts)
+        return embeddings.tolist()
+       
+
+    def add_document_chunks(self, chunks: List[DocumentChunk]):
+        """Add chunks to ChromaDB collection"""
+
+        # Prepare data for ChromaDB
+        ids = [chunk.chunk_id for chunk in chunks]
+        documents = [chunk.content for chunk in chunks]
+        metadatas = []
+
+        for chunk in chunks:
+            metadata = {
+                'chunk_type': chunk.chunk_type,
+                'page_num': chunk.page_number,
+                'source_page': chunk.page_number + 1
+            }
+            if chunk.metadata:
+                metadata.update(chunk.metadata)
+            metadatas.append(metadata)
+
+        # Generate embeddings using our local model
+        embeddings = self._custom_embedding_function(documents)
+
+        self.collection.add(
+            ids=ids,
+            documents=documents,
+            metadatas=metadatas,
+            embeddings=embeddings
+        )
+        logger.info(f"Added {len(chunks)} chunks to ChromaDB collection")
+
+    def get_document(self, query: str):
+        # Generate query embedding using our local model
+        query_embedding = self.embedder.encode(query).tolist()
+
+        # Query the vector store
+        results = self.collection.query(
+            query_embeddings=[query_embedding],
+            n_results=3  # top-k results
         )
 
-        return vector_retriever
+        return results
 
     def has_documents(self) -> bool:
         """
@@ -96,13 +123,8 @@ class VectorStoreService:
             bool: True if documents exist, False otherwise
         """
         try:
-            # create client with telemetry disabled
-            client = chromadb.Client(Settings(
-                persist_directory=self.persistent_directory,
-                anonymized_telemetry=False,
-                is_persistent=True
-            ))
-            collection = client.get_or_create_collection(self.collection)
+
+            collection = self.client.get_or_create_collection(self.collection_name)
 
             # Get count of documents in collection
             count = collection.count()

@@ -35,21 +35,19 @@ class ChatbotService:
     def __init__(self, template: Optional[str] = None,
                  client: Optional[Any] = None,
                  vlm_model: Optional[str] = None,
-                 embedding_model: Optional[str] = None,
-                 vector: Optional[VectorStoreService] = None):
+                 embedding_model: Optional[str] = None):
 
         self.template = template
         self.client = client
         self.vlm_model = vlm_model or "pixtral-12b-2409"
         self.embedding_model = embedding_model
-        self.vector = vector
         
         # Add new services
         self.arxiv_service = ArxivService()
-        self.design_recommendation_service = None 
+        self.vector = None
+        self.design_recommendation_service = None
         self.document_summarization_service = None
         self.function_calling_service = None
-        self.vector_store = VectorStoreService(self.embedding_model)
 
     def get_function_definitions(self) -> List[Dict]:
         """
@@ -106,22 +104,18 @@ class ChatbotService:
                  if not self.is_query_relevant(query):
                     return json.dumps({"message": PromptMessage.DEFAULT_MESSAGE})
 
-            import base64
-
-            has_document =  self.vector_store.has_documents()
+            has_document = self.vector.has_documents()
 
             system_prompt = PromptMessage.FUNCTION_CALLING_SYSTEM_PROMPT.format(HAS_DOCUMENT=has_document)
             
             # Prepare user message with PDF context if available
             user_content = query
             if pdf_content:
-                # Encode PDF as base64 with proper padding
-                pdf_base64 = base64.b64encode(pdf_content).decode('utf-8')
-                user_content = f"{query}\n\n[PDF Document Available: {pdf_filename}]"
-                
+                user_content = f"{query}\n\n[PDF Document Available as this file name: {pdf_filename}]"
+
                 # Store PDF data for function calling
                 self._current_pdf_data = {
-                    'pdf_base64': pdf_base64,
+                    'pdf_content': pdf_content,
                     'filename': pdf_filename
                 }
 
@@ -174,9 +168,11 @@ class ChatbotService:
                 self.vlm_model = model_config["VLM"]
                 self.embedding_model = model_config["EMBEDDING"]
     
-        
+        # Create a single vector store instance to be shared across services
         self.vector = VectorStoreService(embedding_model=self.embedding_model)
-        
+
+        self.arxiv_service = ArxivService()
+
         # Initialize design recommendation service
         self.design_recommendation_service = DesignRecommendationService(
             arxiv_service=self.arxiv_service,
@@ -184,10 +180,12 @@ class ChatbotService:
             llm_client=self.client
         )
 
-        # Initialize document summarization service
+        # Initialize document summarization service with the shared vector store
         self.document_summarization_service = DocumentSummarizationService(
             vlm_client=self.client,
-            vlm_model=self.vlm_model
+            vlm_model=self.vlm_model,
+            embedding_model=self.embedding_model,
+            vector_store=self.vector  # Pass the shared instance
         )
 
         # Initialize function calling service
