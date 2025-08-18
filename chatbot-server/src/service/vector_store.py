@@ -25,10 +25,17 @@ class VectorStoreService:
 
     def __init__(self, embedding_model:str, persistent_directory : Optional[str] = None, collection_name : Optional[str] = None):
         """
-        Initialize the VectorStoreService with an embedding model name.
+        Initialize the vector store service and its dependencies.
 
         Args:
-            embedding_model (str): The name of the HuggingFace embedding model used for encoding text.
+            embedding_model (str): Fully qualified name of the HuggingFace/SentenceTransformers model to use for generating embeddings.
+            persistent_directory (Optional[str]): Filesystem path where the Chroma persistent database is stored.
+            collection_name (Optional[str]): Name of the Chroma collection used to store document chunks and their embeddings. 
+
+        Notes:
+            - Embeddings are computed locally using `SentenceTransformer`.
+            - A persistent `chromadb.PersistentClient` is created and a collection is loaded or created
+              on first use.
         """
         self.embedding_model = embedding_model or "sentence-transformers/all-MiniLM-L6-v2"
         self.persistent_directory = persistent_directory or "./chroma"
@@ -43,6 +50,11 @@ class VectorStoreService:
         self._create_vector_store()
 
     def _create_vector_store(self):
+        """Create or load the persistent Chroma vector store and target collection.
+
+        This initializes a persistent Chroma client and attempts to load an existing collection. 
+        If it does not exist, a new collection is created with the local embedding function.
+        """
 
         # Initialize ChromaDB client
         self.client = chromadb.PersistentClient(
@@ -67,14 +79,26 @@ class VectorStoreService:
             logger.info(f"Created new collection '{self.collection_name}'")
 
     def _custom_embedding_function(self, texts):
-        """Custom embedding function to use local downloaded SentenceTransformer model"""
+        """Generate embeddings for a list of texts using the local `SentenceTransformer` model.
+
+        Args:
+            texts (List[str]): Input text strings to embed.
+
+        Returns:
+            List[List[float]]: Embeddings as a list of vectors (one per input text).
+        """
         
         embeddings = self.embedder.encode(texts)
         return embeddings.tolist()
        
 
     def add_document_chunks(self, chunks: List[DocumentChunk]):
-        """Add chunks to ChromaDB collection"""
+        """Add document chunks and their embeddings to the Chroma collection.
+
+        Args:
+            chunks (List[DocumentChunk]): Document chunks to add. Each chunk contains the text
+                content and associated metadata (e.g., chunk type, page number).
+        """
 
         # Prepare data for ChromaDB
         ids = [chunk.chunk_id for chunk in chunks]
@@ -103,6 +127,15 @@ class VectorStoreService:
         logger.info(f"Added {len(chunks)} chunks to ChromaDB collection")
 
     def get_document(self, query: str):
+        """Query the vector store for the most similar document chunks to the input query.
+
+        Args:
+            query (str): Natural language query to search against the stored document embeddings.
+
+        Returns:
+            dict: Chroma query result containing lists for keys: "documents", "metadatas",
+            and "distances" (ordered from most to least similar).
+        """
         # Generate query embedding
         query_embedding = self.embedder.encode(query).tolist()
 

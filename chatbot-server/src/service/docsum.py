@@ -100,13 +100,15 @@ class DocumentSummarizationService:
 
     def _create_final_summary(self, chunk_summaries, summary_type):
         """
-        Create a final comprehensive summary from all chunk summaries.
+        Create the final document summary from individual chunk summaries.
 
         Args:
-            chunk_summaries: List of summaries from individual chunks
+            chunk_summaries (List[str]): Summaries generated for each processed chunk.
+            summary_type (str): Controls the style of the final summary. Use "brief" for a concise
+                overview; otherwise produces a detailed summary.
 
         Returns:
-            str: Final comprehensive summary
+            str: Final comprehensive summary aggregated and rewritten according to the selected style.
         """
         combined_text = "\n\n".join([f"Section {i + 1}: {summary}" for i, summary in enumerate(chunk_summaries)])
 
