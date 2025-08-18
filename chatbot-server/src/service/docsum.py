@@ -20,7 +20,7 @@ class DocumentSummarizationService:
         self.client = vlm_client
         self.vlm_model = vlm_model
         self.embedding_model = embedding_model
-        self.blip_processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
+        self.blip_processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base", use_fast=True)
         self.blip_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.blip_model.to(self.device)
@@ -58,13 +58,13 @@ class DocumentSummarizationService:
         chunk_summaries = []
         for i, chunk in enumerate(chunks):
             chunk_summary = self._summarize_chunk(chunk)
+            print(f"Chunk {i} summary: {chunk_summary}")
             chunk_summaries.append(chunk_summary)
-
-        print("Chunk summaries: " + str(chunk_summaries))
 
         # Combine all chunk summaries
         if len(chunk_summaries) > 1:
             combined_summary = self._create_final_summary(chunk_summaries, summary_type)
+            print(f"All chunk summaries: {combined_summary}")
             return combined_summary
         else:
             return chunk_summaries[0]
@@ -83,7 +83,7 @@ class DocumentSummarizationService:
         prompt = PromptMessage.DOCUMENT_SUMMARIZATION_PROMPT
         prompt = prompt.format(text=chunk.content)
         
-        logger.info(f"Summarizing chunk of type: {chunk.chunk_type}, length: {len(chunk.content)}")
+        logger.info(f"Summarizing chunk of type: {chunk.chunk_type}, length: {len(chunk.content)} sentences")
 
         response = self.client.chat.complete(
             model=self.vlm_model,
@@ -120,7 +120,7 @@ class DocumentSummarizationService:
             messages=[
                 {"role": "system",
                  "content": "You are a helpful assistant that specializes in analyzing and summarizing academic papers and technical documents."},
-                {"role": "user", "content": prompt.format(combined_text)},
+                {"role": "user", "content": prompt.format(content=combined_text)},
             ],
             temperature=0.3,
             max_tokens=1024
@@ -224,6 +224,7 @@ class DocumentSummarizationService:
 
         for sentence in sentences:
             if sentence.strip():
+                # 512 sentences in one chunk
                 if len(current_chunk) + len(sentence) + 1 <= max_length:
                     current_chunk += sentence + ". "
                 else:
@@ -237,7 +238,7 @@ class DocumentSummarizationService:
         return chunks
 
     def _generate_image_caption(self, image):
-        inputs = self.blip_processor(image, return_tensors="pt").to(self.device)
+        inputs = self.blip_processor(image, return_tensors="pt").to(self.device) # Tokenization
         out = self.blip_model.generate(**inputs)
         caption = self.blip_processor.decode(out[0], skip_special_tokens=True)
         return caption

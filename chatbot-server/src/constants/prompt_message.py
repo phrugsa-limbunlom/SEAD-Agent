@@ -149,7 +149,7 @@ class PromptMessage:
     - Important information from any images, charts, or diagrams
     - Overall message or findings
                 
-    Content:"""
+    Content: {content}"""
 
     DETAILED_DOCUMENT_SUMMARIZATION = prompt = """Please provide a comprehensive summary of the following content, including:
     - Main topics and themes from the text
@@ -159,4 +159,4 @@ class PromptMessage:
     - Technical terms or concepts mentioned
     - Relationships between text and visual content
                 
-    Content:"""
+    Content: {content}"""

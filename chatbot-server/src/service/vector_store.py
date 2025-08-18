@@ -59,7 +59,6 @@ class VectorStoreService:
             self.collection = self.client.get_collection(name=self.collection_name)
             logger.info(f"Loaded existing collection '{self.collection_name}'")
         except Exception as e:
-            # Create collection with a custom embedding function that uses our local model
             self.collection = self.client.create_collection(
                 name=self.collection_name,
                 embedding_function=self._custom_embedding_function,
@@ -104,14 +103,27 @@ class VectorStoreService:
         logger.info(f"Added {len(chunks)} chunks to ChromaDB collection")
 
     def get_document(self, query: str):
-        # Generate query embedding using our local model
+        # Generate query embedding
         query_embedding = self.embedder.encode(query).tolist()
 
-        # Query the vector store
         results = self.collection.query(
             query_embeddings=[query_embedding],
-            n_results=3  # top-k results
+            n_results=3,  # top-k results
+            include=["documents", "metadatas", "distances"]
         )
+
+        distances = results['distances'][0]
+
+        logger.info(f"Query: '{query}' - Distances: {[f'{d:.3f}' for d in distances]}")
+
+        logger.info(f"Documents found: {len(results['documents'][0]) if results['documents'] else 0}")
+
+        for i, doc in enumerate(results['documents'][0]):
+            doc_preview = doc[:1000] + "..." if len(doc) > 100 else doc
+            logger.info(f"Document {i + 1}: {doc_preview}")
+
+        for i, metadata in enumerate(results['metadatas'][0]):
+            logger.info(f"Metadata {i + 1}: {metadata}")
 
         return results
 
