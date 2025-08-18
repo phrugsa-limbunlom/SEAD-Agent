@@ -119,8 +119,8 @@ class VectorStoreService:
         logger.info(f"Documents found: {len(results['documents'][0]) if results['documents'] else 0}")
 
         for i, doc in enumerate(results['documents'][0]):
-            doc_preview = doc[:1000] + "..." if len(doc) > 100 else doc
-            logger.info(f"Document {i + 1}: {doc_preview}")
+            # doc_preview = doc[:1000] + "..." if len(doc) > 100 else doc
+            logger.info(f"Document {i + 1}: {doc}")
 
         for i, metadata in enumerate(results['metadatas'][0]):
             logger.info(f"Metadata {i + 1}: {metadata}")

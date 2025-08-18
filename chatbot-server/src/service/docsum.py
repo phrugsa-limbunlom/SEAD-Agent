@@ -58,13 +58,13 @@ class DocumentSummarizationService:
         chunk_summaries = []
         for i, chunk in enumerate(chunks):
             chunk_summary = self._summarize_chunk(chunk)
-            print(f"Chunk {i} summary: {chunk_summary}")
+            logger.info(f"Chunk {i} summary: {chunk_summary}")
             chunk_summaries.append(chunk_summary)
 
         # Combine all chunk summaries
         if len(chunk_summaries) > 1:
             combined_summary = self._create_final_summary(chunk_summaries, summary_type)
-            print(f"All chunk summaries: {combined_summary}")
+            logger.info(f"All chunk summaries: {combined_summary}")
             return combined_summary
         else:
             return chunk_summaries[0]
@@ -154,6 +154,7 @@ class DocumentSummarizationService:
 
                     # Extract text in the page
                     text_chunks = self._split_text(text, max_length=max_length)
+                    logger.info(f"Page: {page_num}, Text chunks: {text_chunks}")
                     logger.info(f"Page {page_num}: created {len(text_chunks)} text chunks")
                     
                     for i, chunk in enumerate(text_chunks):
