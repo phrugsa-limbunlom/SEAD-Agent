@@ -401,7 +401,7 @@ class FunctionCallingService:
 
                 sources, tool_calls_made, messages = self._execute_function(messages, response, pdf_data)
 
-                logger.info("Messages list before final response from Assistant: ", messages)
+                logger.info(f"Messages list before final response from Assistant: {messages}")
 
                 response = self.vlm_client.chat.complete(
                     model=self.vlm_model,
@@ -419,7 +419,7 @@ class FunctionCallingService:
 
                     messages.append(response.choices[0].message)
 
-                    logger.info("List of messages after final response from Assistant: ", messages)
+                    logger.info(f"List of messages after final response from Assistant: {messages}")
 
                     sources, tool_calls_made, messages = self._execute_function(messages, response, pdf_data,
                                                                                 tool_calls_made)
@@ -427,7 +427,7 @@ class FunctionCallingService:
                 # Add system prompt to messages for final response
                 final_messages = [{"role": "system", "content": PromptMessage.FINAL_SYSTEM_PROMPT}] + messages
 
-                logger.info("final_messages", final_messages)
+                logger.info(f"final_messages: {final_messages}")
 
                 # Generate final answer with function results
                 try:
@@ -440,7 +440,7 @@ class FunctionCallingService:
                 except Exception as e:
                     logger.error(f"Error calling API for Final Response: {e}")
 
-                logger.info("tool_calls_made", tool_calls_made)
+                logger.info(f"tool_calls_made: {tool_calls_made}")
                 return {
                     "initial_response": initial_response,
                     "sources": sources,
