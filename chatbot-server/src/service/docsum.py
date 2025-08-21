@@ -189,7 +189,7 @@ class DocumentSummarizationService:
                                 # image caption
                                 caption = self._generate_image_caption(img_data)
 
-                                logger.info(f"Image caption: {caption}")
+                                logger.info(f"Page {page_num}, Image {img_index + 1}, Image caption: {caption}")
 
                                 chunk_id = f"image_{page_num}_{img_index}_{uuid.uuid4().hex[:8]}"
 
