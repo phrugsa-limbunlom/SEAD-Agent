@@ -12,6 +12,9 @@ from service.vector_store import VectorStoreService
 from transformers import BlipProcessor, BlipForConditionalGeneration
 import logging
 
+import base64
+import io
+
 logger = logging.getLogger(__name__)
 
 
@@ -20,10 +23,6 @@ class DocumentSummarizationService:
         self.client = vlm_client
         self.vlm_model = vlm_model
         self.embedding_model = embedding_model
-        self.blip_processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base", use_fast=True)
-        self.blip_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.blip_model.to(self.device)
         
         # Use provided vector store or create one if not provided (for backward compatibility)
         if vector_store is not None:
@@ -148,9 +147,14 @@ class DocumentSummarizationService:
             for page_num in range(len(doc)):
                 page = doc.load_page(page_num)
 
+                page_num = page_num + 1 # for logging
+
                 text = page.get_text()
 
                 logger.info(f"Page {page_num}: extracted {len(text)} characters")
+
+                image_list = page.get_images(full=True)
+                logger.info(f"Page {page_num}: found {len(image_list)} images")
 
                 if text and isinstance(text, str) and text.strip():
 
@@ -169,11 +173,11 @@ class DocumentSummarizationService:
                                 chunk_id=chunk_id,
                                 metadata={'chunk_id': f'text_{page_num}_{i}'}
                             ))
+                else:
+                    logger.warning(f"Page {page_num}: No valid text content found")
 
-                    # Extract images in the page
-                    image_list = page.get_images(full=True)
-                    logger.info(f"Page {page_num}: found {len(image_list)} images")
-                    
+                if image_list:
+      
                     for img_index, img in enumerate(image_list):
                         try:
                             xref = img[0]
@@ -181,10 +185,11 @@ class DocumentSummarizationService:
 
                             if pix.n - pix.alpha < 4:  # Gray or RGB
                                 img_data = pix.tobytes("png")
-                                image = Image.open(io.BytesIO(img_data))
-
+                                
                                 # image caption
-                                caption = self._generate_image_caption(image)
+                                caption = self._generate_image_caption(img_data)
+
+                                logger.info(f"Image caption: {caption}")
 
                                 chunk_id = f"image_{page_num}_{img_index}_{uuid.uuid4().hex[:8]}"
 
@@ -196,14 +201,12 @@ class DocumentSummarizationService:
                                     metadata={
                                         'source_page': page_num + 1,
                                         'image_index': img_index,
-                                    }
-                                ))
+                                        }
+                                    ))
 
-                            pix = None
+                                pix = None
                         except Exception as e:
                             logger.warning(f"Error processing image on page {page_num}: {e}")
-                else:
-                    logger.warning(f"Page {page_num}: No valid text content found")
                     
         finally:
             doc.close()
@@ -241,7 +244,23 @@ class DocumentSummarizationService:
         return chunks
 
     def _generate_image_caption(self, image):
-        inputs = self.blip_processor(image, return_tensors="pt").to(self.device) # Tokenization
-        out = self.blip_model.generate(**inputs)
-        caption = self.blip_processor.decode(out[0], skip_special_tokens=True)
-        return caption
+        
+        # Encode the raw image bytes to base64
+        img_base64 = base64.b64encode(image).decode('utf-8')
+        
+        messages = [
+            {"role": "system", "content": "You are a research assistant tasked with analyzing and describing figures in research papers (chart, diagram, screenshot, etc.). Provide a clear and on point caption that describes what you see in the image."},
+            {"role": "user", "content": [
+                {"type": "text", "text": "Please describe this image in detail if the image is related to reseach papers, otherwise skip it (eg. logo)"},
+                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_base64}"}}
+            ]}
+        ]
+        
+        response = self.client.chat.complete(
+            model=self.vlm_model,
+            messages=messages,
+            temperature=0.3,
+            max_tokens=150
+        )
+        
+        return response.choices[0].message.content.strip()
