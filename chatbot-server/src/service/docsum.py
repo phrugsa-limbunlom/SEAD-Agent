@@ -230,7 +230,7 @@ class DocumentSummarizationService:
 
         for sentence in sentences:
             if sentence.strip():
-                # 512 sentences in one chunk
+                # 512 characters in one chunk
                 if len(current_chunk) + len(sentence) + 1 <= max_length:
                     current_chunk += sentence + ". "
                 else:

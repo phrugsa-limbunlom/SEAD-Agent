@@ -115,7 +115,7 @@ class VectorStoreService:
                 metadata.update(chunk.metadata)
             metadatas.append(metadata)
 
-        # Generate embeddings using our local model
+        # Generate embeddings using local model
         embeddings = self._custom_embedding_function(documents)
 
         self.collection.add(
