@@ -19,6 +19,8 @@ A comprehensive RAG-powered document system that combines a Python FastAPI backe
 
 📚 Explore the comprehensive implementation of automated tool calling in **SEAD-Agent** through this detailed guide: [A Simple Method For Building Auto-Tool-Calling Agents Without Frameworks](https://phrugsa-limbunlom.medium.com/a-straightforward-method-for-creating-auto-tool-calling-agents-bcbef40bf505).
 
+Understand how document summarization and QA in RAG implemented in **SEAD-Agent** from this guide: [Document Summarization & QA in RAG without Frameworks (PyMuPDF & ChromaDB)](https://medium.com/towards-artificial-intelligence/document-summarization-qa-in-rag-without-frameworks-pymupdf-chromadb-5446c6373579)
+
 ## 🎬 Demo
 
 ### Search Papers from ArXiv
